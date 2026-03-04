@@ -1,0 +1,19 @@
+UseTab: Always
+TabWidth: 4
+IndentWidth: 4
+
+AllowShortFunctionsOnASingleLine: None
+AlignConsecutiveDeclarations: true
+AlignConsecutiveAssignments: true
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+    AfterFunction: true
+    AfterClass: false
+    AfterControlStatement: false
+    AfterEnum: false
+    AfterNamespace: false
+    AfterStruct: false
+    AfterUnion: false
+    BeforeElse: true
+    BeforeCatch: true
