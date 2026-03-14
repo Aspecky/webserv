@@ -20,7 +20,7 @@ Diagnostics:
       - performance-avoid-endl
       - readability-identifier-length
       - readability-implicit-bool-conversion
-      - readability-magic-numbers
+      #- readability-magic-numbers
     CheckOptions:
       readability-identifier-naming.DefaultCase: camelBack
       readability-identifier-naming.ClassCase: CamelCase
