@@ -1,4 +1,6 @@
 #include "Core/Reactor.hpp"
+#include "Config/Config.hpp"
+#include "Config/ServerConfig.hpp"
 #include "Core/Client.hpp"
 #include "Core/Server.hpp"
 #include <asm-generic/socket.h>
@@ -12,36 +14,42 @@
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <vector>
 
-Reactor::Reactor()
+Reactor::Reactor(const Config &config)
 {
-	int sockFd = socket(PF_INET, SOCK_STREAM, 0);
+	const std::vector<ServerConfig>			 &servers = config.servers();
+	std::vector<ServerConfig>::const_iterator it;
 
-	struct sockaddr_in addr = {};
-	addr.sin_family			= PF_INET;
-	addr.sin_port			= htons(8080);
-	addr.sin_addr.s_addr	= INADDR_ANY;
+	for (it = servers.begin(); it != servers.end(); ++it) {
+		int sockFd = socket(PF_INET, SOCK_STREAM, 0);
 
-	int yes = 1;
-	setsockopt(sockFd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+		int yes = 1;
+		setsockopt(sockFd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
 
-	if (bind(sockFd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-		std::cout << "bind: " << strerror(errno) << "\n";
-		return;
+		struct sockaddr_in addr = {};
+		addr.sin_family			= PF_INET;
+		addr.sin_port			= htons(it->port);
+		addr.sin_addr.s_addr	= INADDR_ANY;
+
+		if (bind(sockFd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
+			std::cout << "bind: " << strerror(errno) << "\n";
+			return;
+		}
+
+		if (listen(sockFd, BACKLOG) == -1) {
+			return;
+		}
+
+		Server *server = new Server(sockFd);
+		servers_.push_back(server);
+		socketFdToServer_[sockFd] = server;
+
+		struct pollfd pfd = {};
+		pfd.fd			  = sockFd;
+		pfd.events		  = POLLIN;
+		pollFds_.push_back(pfd);
 	}
-
-	if (listen(sockFd, 10) == -1) {
-		return;
-	}
-
-	Server *server = new Server(sockFd);
-	servers_.push_back(server);
-	socketFdToServer_[sockFd] = server;
-
-	struct pollfd pfd = {};
-	pfd.fd			  = sockFd;
-	pfd.events		  = POLLIN;
-	pollFds_.push_back(pfd);
 }
 
 Reactor::~Reactor()
@@ -58,8 +66,8 @@ void Reactor::acceptConnection_(Server &server)
 	socketFdToClient_[fd] = client;
 
 	struct pollfd pfd = {};
-	pfd.fd = fd;
-	pfd.events = POLLIN;
+	pfd.fd			  = fd;
+	pfd.events		  = POLLIN;
 	pollFds_.push_back(pfd);
 }
 
@@ -107,29 +115,8 @@ void Reactor::run()
 				acceptConnection_(*it->second);
 			}
 			else {
-				// size_t before = pollFds_.size();
 				handleClient_(*socketFdToClient_[pfd.fd], i);
-				// if (pollFds_.size() < before) {
-				// 	--i;
-				// }
 			}
-			// if (pfd.revents & (POLLIN | POLLHUP)) {
-			// 	count++;
-			// 	if (pfd.fd == listener) {
-			// 		handleNewConnection(listener, pollFds_);
-			// 	}
-			// 	else {
-			// 		size_t size = pollFds_.size();
-			// 		handleClient(pollFds_, i);
-			// 		if (size != pollFds_.size()) {
-			// 			--i;
-			// 		}
-			// 	}
-			// }
-
-			// if (count == poll_count) {
-			// 	break;
-			// }
 		}
 	}
 }

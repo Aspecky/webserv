@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Config/Config.hpp"
 #include "Core/Client.hpp"
 #include "Core/Server.hpp"
 #include <cstddef>
@@ -7,9 +8,11 @@
 #include <sys/poll.h>
 #include <vector>
 
+#define BACKLOG 10
+
 class Reactor {
   public:
-	Reactor();
+	Reactor(const Config &config);
 	~Reactor();
 
 	void run();
@@ -18,11 +21,11 @@ class Reactor {
 	Reactor(const Reactor &);
 	Reactor &operator=(const Reactor &);
 
-	std::vector<pollfd>		pollFds_;
+	std::vector<pollfd> pollFds_;
 
 	std::vector<Server *>	servers_;
 	std::map<int, Server *> socketFdToServer_;
-	
+
 	std::vector<Client *>	clients_;
 	std::map<int, Client *> socketFdToClient_;
 
