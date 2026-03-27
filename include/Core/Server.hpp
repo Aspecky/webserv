@@ -1,15 +1,21 @@
 #pragma once
 
+#include "Config/ServerConfig.hpp"
+class Client;
+
 class Server {
   public:
-	Server(int socketFd);
+	Server(const ServerConfig &config);
 	~Server();
 
-	int socket() const;
+	int					socketFd() const;
+	Client			   *acceptClient();
+	const ServerConfig &config();
 
   private:
 	Server(const Server &);
 	Server &operator=(const Server &);
 
-	int socket_;
+	const ServerConfig &config_;
+	int					socketFd_;
 };

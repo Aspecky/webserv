@@ -21,6 +21,9 @@ class Reactor {
 	Reactor(const Reactor &);
 	Reactor &operator=(const Reactor &);
 
+	void new_();
+	void destroy_();
+
 	std::vector<pollfd> pollFds_;
 
 	std::vector<Server *>	servers_;
@@ -30,5 +33,7 @@ class Reactor {
 	std::map<int, Client *> socketFdToClient_;
 
 	void acceptConnection_(Server &server);
+	void disconnectClient_(size_t idx);
+	void handleRead();
 	void handleClient_(Client &client, size_t &idx);
 };
