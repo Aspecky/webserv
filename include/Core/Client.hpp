@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Http/HttpRequest.hpp"
 #include <cstddef>
 #include <string>
 class Server;
@@ -11,6 +12,8 @@ class Client {
 
 	int	 socket() const;
 	void onReceive(const char *buf, size_t n);
+
+	const HttpRequest &request() const;
 
 	bool		hasResponse() const;
 	const char *responseData() const;
@@ -25,5 +28,6 @@ class Client {
 
 	Server	   &server_;
 	int			socket_;
+	HttpRequest request_;
 	std::string writeBuffer_;
 };

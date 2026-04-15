@@ -3,6 +3,7 @@
 #include "Config/ServerConfig.hpp"
 #include "Core/Client.hpp"
 #include "Core/Server.hpp"
+#include "Http/HttpRequest.hpp"
 #include <asm-generic/socket.h>
 #include <cerrno>
 #include <cstddef>
@@ -179,6 +180,27 @@ void Reactor::run()
 
 				client.onReceive(buf, nbytes);
 
+				if (client.request().hasError()) {
+					disconnectClient_(i);
+					--i;
+					continue;
+				}
+
+				if (client.request().isComplete()) {
+					const HttpRequest &req = client.request();
+
+					std::cout << req.method() << " " << req.uri() << " "
+							  << req.version() << "\n";
+
+					const std::map<std::string, std::string> &headers =
+						req.headers();
+
+					std::map<std::string, std::string>::const_iterator it;
+
+					for (it = headers.begin(); it != headers.end(); ++it) {
+						std::cout << it->first << " " << it->second << "\n";
+					}
+				}
 				if (client.hasResponse()) {
 					pfd.events |= POLLOUT;
 				}

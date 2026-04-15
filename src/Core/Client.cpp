@@ -1,5 +1,6 @@
 #include "Core/Client.hpp"
 #include "Core/Server.hpp"
+#include "Http/HttpRequest.hpp"
 #include <cstddef>
 #include <unistd.h>
 
@@ -18,9 +19,15 @@ int Client::socket() const
 	return socket_;
 }
 
+// TODO: Unecessary wrapped function
 void Client::onReceive(const char *buf, size_t n)
 {
-	writeBuffer_.append(buf, n);
+	request_.feed(buf, n);
+}
+
+const HttpRequest &Client::request() const
+{
+	return request_;
 }
 
 bool Client::hasResponse() const
