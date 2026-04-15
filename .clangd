@@ -25,6 +25,8 @@ Diagnostics:
       readability-identifier-naming.DefaultCase: camelBack
       readability-identifier-naming.ClassCase: CamelCase
       readability-identifier-naming.ConstantCase: UPPER_CASE
+      readability-identifier-naming.EnumCase: CamelCase
+      readability-identifier-naming.PrivateMemberSuffix: _
   UnusedIncludes: Strict
   MissingIncludes: Strict
 
