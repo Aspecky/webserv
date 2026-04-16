@@ -1,18 +1,19 @@
 #pragma once
 
-#include "Config/Config.hpp"
+
+#include "Config/ConfigParser.hpp"
 #include "Core/Client.hpp"
 #include "Core/Server.hpp"
 #include <cstddef>
 #include <map>
 #include <sys/poll.h>
 #include <vector>
-
+	
 #define BACKLOG 10
 
 class Reactor {
   public:
-	Reactor(const Config &config);
+	Reactor(const std::vector<ServerConfig> &config);
 	~Reactor();
 
 	void run();

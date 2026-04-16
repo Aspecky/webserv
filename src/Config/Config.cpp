@@ -1,16 +1,16 @@
-#include "Config/Config.hpp"
-#include "Config/ServerConfig.hpp"
-#include <vector>
+// #include "Config/Config.hpp"
+// #include "Config/ServerConfig.hpp"
+// #include <vector>
 
-Config::Config(const std::vector<ServerConfig> &servers) : servers_(servers)
-{
-}
+// Config::Config(const std::vector<ServerConfig> &servers) : servers_(servers)
+// {
+// }
 
-Config::~Config()
-{
-}
+// Config::~Config()
+// {
+// }
 
-const std::vector<ServerConfig> &Config::servers() const
-{
-	return servers_;
-}
+// const std::vector<ServerConfig> &Config::servers() const
+// {
+// 	return servers_;
+// }

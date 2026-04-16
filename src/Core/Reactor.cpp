@@ -1,10 +1,11 @@
 #include "Core/Reactor.hpp"
-#include "Config/Config.hpp"
+#include "Config/ConfigType.hpp"
+#include "Config/ConfigParser.hpp"
 #include "Config/ServerConfig.hpp"
 #include "Core/Client.hpp"
 #include "Core/Server.hpp"
 #include "Http/HttpRequest.hpp"
-#include <asm-generic/socket.h>
+// #include <asm-generic/socket.h>
 #include <cerrno>
 #include <cstddef>
 #include <cstdio>
@@ -20,17 +21,15 @@
 #include <unistd.h>
 #include <vector>
 
-Reactor::Reactor(const Config &config)
+Reactor::Reactor(const std::vector<ServerConfig> &config)
 {
 	try {
-		const std::vector<ServerConfig> &servers = config.servers();
-
-		for (size_t i = 0; i < servers.size(); i++) {
-			const ServerConfig &serverConfig = servers[i];
+		for (size_t i = 0; i < config.size(); i++) {
+			const ServerConfig &serverConfig = config[i];
 			Server			   *server		 = new Server(serverConfig);
 			int					sockFd		 = server->socketFd();
 
-			servers_.push_back(server);
+			// config.push_back(server);
 			socketFdToServer_[sockFd] = server;
 
 			struct pollfd pfd = {};

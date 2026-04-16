@@ -39,6 +39,9 @@ $(BUILD_DIR_DEV)/%.o: %.cpp $(HEADERS)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+
+run:
+	./$(NAME) src/config.conf
 .PHONY: clean
 clean:
 	rm -rf ./build
