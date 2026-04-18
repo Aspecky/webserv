@@ -2,6 +2,7 @@ UseTab: Always
 TabWidth: 4
 IndentWidth: 4
 
+AllowShortEnumsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
 AlignConsecutiveDeclarations: true
 AlignConsecutiveAssignments: true
