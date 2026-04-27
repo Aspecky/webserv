@@ -13,7 +13,7 @@ BraceWrapping:
     AfterClass: false
     AfterControlStatement: false
     AfterEnum: false
-    AfterNamespace: false
+    AfterNamespace: true
     AfterStruct: false
     AfterUnion: false
     BeforeElse: true

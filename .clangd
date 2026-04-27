@@ -20,13 +20,30 @@ Diagnostics:
       - performance-avoid-endl
       - readability-identifier-length
       - readability-implicit-bool-conversion
+      - readability-isolate-declaration
+      - readability-uppercase-literal-suffix
       #- readability-magic-numbers
     CheckOptions:
       readability-identifier-naming.DefaultCase: camelBack
       readability-identifier-naming.ClassCase: CamelCase
       readability-identifier-naming.ConstantCase: UPPER_CASE
       readability-identifier-naming.EnumCase: CamelCase
+      readability-identifier-naming.TemplateParameterCase: CamelCase
+      readability-identifier-naming.NamespaceCase: lower_case
       readability-identifier-naming.PrivateMemberSuffix: _
   UnusedIncludes: Strict
   MissingIncludes: Strict
-
+---
+If:
+  PathMatch: [tests/.*]
+Diagnostics:
+  ClangTidy:
+    Remove:
+      - cppcoreguidelines-avoid-non-const-global-variables
+      - readability-else-after-return
+      - readability-magic-numbers
+---
+If:
+  PathMatch: [tests/include/lest.hpp]
+Diagnostics:
+  Suppress: '*'
