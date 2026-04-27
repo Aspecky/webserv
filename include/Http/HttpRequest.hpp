@@ -1,27 +1,14 @@
 #pragma once
 
-#include <cstddef>
 #include <map>
 #include <string>
 
+class HttpParser;
+
 class HttpRequest {
   public:
-	enum State {
-		PARSING_REQUEST_LINE,
-		PARSING_HEADERS,
-		PARSING_BODY,
-		COMPLETE,
-		ERROR
-	};
-
 	HttpRequest();
 	~HttpRequest();
-
-	bool feed(const char *data, size_t n);
-
-	State state() const;
-	bool  isComplete() const;
-	bool  hasError() const;
 
 	const std::string &method() const;
 	const std::string &uri() const;
@@ -36,19 +23,11 @@ class HttpRequest {
 	HttpRequest(const HttpRequest &);
 	HttpRequest &operator=(const HttpRequest &);
 
-	bool parseRequestLine();
-	bool parseHeaders();
-	bool parseBody();
+	friend class HttpParser;
 
-	static std::string toLower(const std::string &s);
-	static std::string trim(const std::string &s);
-
-	State							   state_;
-	std::string						   raw_;
 	std::string						   method_;
 	std::string						   uri_;
 	std::string						   version_;
 	std::map<std::string, std::string> headers_;
 	std::string						   body_;
-	size_t							   bodyLength_;
 };

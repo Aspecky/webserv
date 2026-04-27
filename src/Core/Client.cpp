@@ -19,15 +19,25 @@ int Client::socket() const
 	return socket_;
 }
 
-// TODO: Unecessary wrapped function
 void Client::onReceive(const char *buf, size_t n)
 {
-	request_.feed(buf, n);
+	parser_.feed(buf, n);
+
+	if (parser_.isComplete()) {
+		// TODO: Build response
+		const HttpRequest &request = parser_.request();
+		
+	}
 }
 
 const HttpRequest &Client::request() const
 {
-	return request_;
+	return parser_.request();
+}
+
+bool Client::requestComplete() const
+{
+	return parser_.isComplete();
 }
 
 bool Client::hasResponse() const

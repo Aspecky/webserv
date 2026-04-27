@@ -4,9 +4,14 @@ SRC_DIR := ./src
 INC_DIR := ./include
 BUILD_DIR_REL := ./build/release
 BUILD_DIR_DEV := ./build/dev
+BUILD_DIR_TEST := ./build/test
+
+TEST_DIR := ./tests
 
 HEADERS := $(shell find $(SRC_DIR) $(INC_DIR) -type f -name "*.hpp")
 SRCS := $(shell find $(SRC_DIR) -type f -name "*.cpp")
+SRC_NO_MAIN := $(filter-out $(SRC_DIR)/main.cpp, $(SRCS))
+TEST_SRCS := $(shell find $(TEST_DIR) -name "*.cpp" 2>/dev/null)
 
 CXX := c++
 CXXFLAGS_COMMON := -std=c++98 -Wall -Wextra -I$(INC_DIR)
@@ -39,7 +44,19 @@ $(BUILD_DIR_DEV)/%.o: %.cpp $(HEADERS)
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-.PHONY: clean
+test: CXXFLAGS := $(CXXFLAGS_COMMON) $(CXXFLAGS_DEV) -I$(TEST_DIR)/include
+test: $(BUILD_DIR_TEST)/$(NAME)_test
+	./$(BUILD_DIR_TEST)/$(NAME)_test
+
+$(BUILD_DIR_TEST)/$(NAME)_test: OBJS := $(SRC_NO_MAIN:%.cpp=$(BUILD_DIR_TEST)/%.o) $(TEST_SRCS:%.cpp=$(BUILD_DIR_TEST)/%.o)
+$(BUILD_DIR_TEST)/$(NAME)_test: $(SRC_NO_MAIN:%.cpp=$(BUILD_DIR_TEST)/%.o) $(TEST_SRCS:%.cpp=$(BUILD_DIR_TEST)/%.o)
+	$(CXX) $(OBJS) $(CXXFLAGS) -o $@
+
+$(BUILD_DIR_TEST)/%.o: %.cpp $(HEADERS)
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+.PHONY: clean test
 clean:
 	rm -rf ./build
 

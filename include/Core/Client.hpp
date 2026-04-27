@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Http/HttpParser.hpp"
 #include "Http/HttpRequest.hpp"
 #include <cstddef>
 #include <string>
@@ -14,6 +15,7 @@ class Client {
 	void onReceive(const char *buf, size_t n);
 
 	const HttpRequest &request() const;
+	bool               requestComplete() const;
 
 	bool		hasResponse() const;
 	const char *responseData() const;
@@ -28,6 +30,6 @@ class Client {
 
 	Server	   &server_;
 	int			socket_;
-	HttpRequest request_;
+	HttpParser  parser_;
 	std::string writeBuffer_;
 };

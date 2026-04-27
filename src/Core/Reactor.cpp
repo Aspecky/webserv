@@ -178,41 +178,48 @@ void Reactor::run()
 					continue;
 				}
 
-				client.onReceive(buf, nbytes);
+				client.onReceive(buf, static_cast<size_t>(nbytes));
 
-				if (client.request().hasError()) {
+				if (client.requestComplete()) {
+					const HttpRequest &req = client.request();
+
+					std::cout << "--- Request ---\n";
+					std::cout << req.method() << " " << req.uri() << " "
+							  << req.version() << "\n";
+					const std::map<std::string, std::string> &headers =
+						req.headers();
+					for (std::map<std::string, std::string>::const_iterator it =
+							 headers.begin();
+						 it != headers.end(); ++it) {
+						std::cout << it->first << ": " << it->second << "\n";
+					}
+					if (!req.body().empty()) {
+						std::cout << "\n" << req.body() << "\n";
+					}
+					std::cout << "---------------\n";
+
+					// Placeholder response so the browser doesn't hang
+					const char *response = "HTTP/1.1 200 OK\r\n"
+										   "Content-Length: 0\r\n"
+										   "Connection: close\r\n"
+										   "\r\n";
+					send(pfd.fd, response, std::strlen(response), 0);
 					disconnectClient_(i);
 					--i;
 					continue;
 				}
 
-				if (client.request().isComplete()) {
-					const HttpRequest &req = client.request();
-
-					std::cout << req.method() << " " << req.uri() << " "
-							  << req.version() << "\n";
-
-					const std::map<std::string, std::string> &headers =
-						req.headers();
-
-					std::map<std::string, std::string>::const_iterator it;
-
-					for (it = headers.begin(); it != headers.end(); ++it) {
-						std::cout << it->first << " " << it->second << "\n";
-					}
-				}
 				if (client.hasResponse()) {
 					pfd.events |= POLLOUT;
 				}
 			}
 
 			// Check for send readiness
-			if (pfd.events & POLLOUT) {
+			if (pfd.revents & POLLOUT) {
 				Client &client = *socketFdToClient_[pfd.fd];
 
 				long nbytes = send(pfd.fd, client.responseData(),
 								   client.responseSize(), 0);
-
 				if (nbytes <= 0) {
 					disconnectClient_(i);
 					--i;
@@ -220,11 +227,6 @@ void Reactor::run()
 				}
 
 				client.consumeResponse(nbytes);
-
-				if (!client.hasResponse()) {
-					pfd.events &= ~POLLOUT;
-					// TODO: client.shouldClose()
-				}
 			}
 		}
 	}
