@@ -1,10 +1,9 @@
 #include "Core/Reactor.hpp"
 #include "Config/Config.hpp"
-#include "Config/ServerConfig.hpp"
+#include "Config/ConfigTypes.hpp"
 #include "Core/Client.hpp"
 #include "Core/Server.hpp"
 #include "Http/HttpRequest.hpp"
-#include <asm-generic/socket.h>
 #include <cerrno>
 #include <cstddef>
 #include <cstdio>
@@ -20,10 +19,10 @@
 #include <unistd.h>
 #include <vector>
 
-Reactor::Reactor(const Config &config)
+Reactor::Reactor(const std::vector<ServerConfig> &servers)
 {
 	try {
-		const std::vector<ServerConfig> &servers = config.servers();
+		// const std::vector<ServerConfig> &servers = config.servers();
 
 		for (size_t i = 0; i < servers.size(); i++) {
 			const ServerConfig &serverConfig = servers[i];
@@ -180,34 +179,34 @@ void Reactor::run()
 
 				client.onReceive(buf, static_cast<size_t>(nbytes));
 
-				if (client.requestComplete()) {
-					const HttpRequest &req = client.request();
+				// if (client.requestComplete()) {
+				// 	const HttpRequest &req = client.request();
 
-					std::cout << "--- Request ---\n";
-					std::cout << req.method() << " " << req.uri() << " "
-							  << req.version() << "\n";
-					const std::map<std::string, std::string> &headers =
-						req.headers();
-					for (std::map<std::string, std::string>::const_iterator it =
-							 headers.begin();
-						 it != headers.end(); ++it) {
-						std::cout << it->first << ": " << it->second << "\n";
-					}
-					if (!req.body().empty()) {
-						std::cout << "\n" << req.body() << "\n";
-					}
-					std::cout << "---------------\n";
+				// 	std::cout << "--- Request ---\n";
+				// 	std::cout << req.method() << " " << req.uri() << " "
+				// 			  << req.version() << "\n";
+				// 	const std::map<std::string, std::string> &headers =
+				// 		req.headers();
+				// 	for (std::map<std::string, std::string>::const_iterator it =
+				// 			 headers.begin();
+				// 		 it != headers.end(); ++it) {
+				// 		std::cout << it->first << ": " << it->second << "\n";
+				// 	}
+				// 	if (!req.body().empty()) {
+				// 		std::cout << "\n" << req.body() << "\n";
+				// 	}
+				// 	std::cout << "---------------\n";
 
-					// Placeholder response so the browser doesn't hang
-					const char *response = "HTTP/1.1 200 OK\r\n"
-										   "Content-Length: 0\r\n"
-										   "Connection: close\r\n"
-										   "\r\n";
-					send(pfd.fd, response, std::strlen(response), 0);
-					disconnectClient_(i);
-					--i;
-					continue;
-				}
+				// 	// Placeholder response so the browser doesn't hang
+				// 	const char *response = "HTTP/1.1 200 OK\r\n"
+				// 						   "Content-Length: 0\r\n"
+				// 						   "Connection: close\r\n"
+				// 						   "\r\n";
+				// 	send(pfd.fd, response, std::strlen(response), 0);
+				// 	disconnectClient_(i);
+				// 	--i;
+				// 	continue;
+				// }
 
 				if (client.hasResponse()) {
 					pfd.events |= POLLOUT;

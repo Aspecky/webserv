@@ -13,7 +13,7 @@ SRCS := $(shell find $(SRC_DIR) -type f -name "*.cpp")
 SRC_NO_MAIN := $(filter-out $(SRC_DIR)/main.cpp, $(SRCS))
 TEST_SRCS := $(shell find $(TEST_DIR) -name "*.cpp" 2>/dev/null)
 
-CXX := c++
+CXX := clang++
 CXXFLAGS_COMMON := -std=c++98 -Wall -Wextra -I$(INC_DIR)
 CXXFLAGS_REL := -Werror
 CXXFLAGS_DEV := -Wformat=2 -Wpedantic -Wconversion -fsanitize=address -ggdb3 -O0

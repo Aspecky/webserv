@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Config/ServerConfig.hpp"
+#include "Config/ConfigTypes.hpp"
 #include <vector>
 
 class Config {

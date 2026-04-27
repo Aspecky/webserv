@@ -1,5 +1,5 @@
 #include "Config/Config.hpp"
-#include "Config/ServerConfig.hpp"
+#include "Config/ConfigTypes.hpp"
 #include <vector>
 
 Config::Config(const std::vector<ServerConfig> &servers) : servers_(servers)

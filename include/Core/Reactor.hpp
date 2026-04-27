@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Config/Config.hpp"
+#include "Config/ConfigTypes.hpp"
 #include "Core/Client.hpp"
 #include "Core/Server.hpp"
 #include <cstddef>
@@ -12,7 +13,8 @@
 
 class Reactor {
   public:
-	Reactor(const Config &config);
+	// Reactor(const Config &config);
+	Reactor(const std::vector<ServerConfig> &servers);
 	~Reactor();
 
 	void run();

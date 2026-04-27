@@ -1,6 +1,7 @@
 #include "Core/Client.hpp"
 #include "Core/Server.hpp"
 #include "Http/HttpRequest.hpp"
+#include "Response/HttpResponse.hpp"
 #include <cstddef>
 #include <unistd.h>
 
@@ -21,19 +22,23 @@ int Client::socket() const
 
 void Client::onReceive(const char *buf, size_t n)
 {
-	parser_.feed(buf, n);
-
-	if (parser_.isComplete()) {
-		// TODO: Build response
-		const HttpRequest &request = parser_.request();
-		
+	if (parser_.feed(buf, n)) {
+		if (parser_.isComplete()) {
+			// TODO: Build response
+			const HttpRequest &request = parser_.request();
+			response_.buildResponse(request, server_.config());
+		}
 	}
+	else {
+		response_._buildError(400);
+	}
+	// parser_.feed(buf, n);
 }
 
-const HttpRequest &Client::request() const
-{
-	return parser_.request();
-}
+// const HttpRequest &Client::request() const
+// {
+// 	return parser_.request();
+// }
 
 bool Client::requestComplete() const
 {

@@ -1,5 +1,6 @@
 #include "Config/Config.hpp"
-#include "Config/ServerConfig.hpp"
+#include "Config/ConfigParser.hpp"
+#include "Config/ConfigTypes.hpp"
 #include "Core/Reactor.hpp"
 #include "Http/Reader.hpp"
 #include <cstddef>
@@ -11,23 +12,38 @@
 #include <string>
 #include <vector>
 
-static Config newMockConfig()
+// static Config newMockConfig()
+// {
+// 	std::vector<ServerConfig> servers;
+
+// 	ServerConfig s = {};
+// 	s.port		   = 6969;
+
+// 	servers.push_back(s);
+
+// 	return Config(servers);
+// }
+
+int main(int ac, char **av)
 {
-	std::vector<ServerConfig> servers;
+	std::string config_path = "default.conf";
+  	if (ac == 2)
+    	config_path = av[1];
 
-	ServerConfig s = {};
-	s.port		   = 6969;
+	ConfigParser parser(config_path);
+    const std::vector<ServerConfig> &servers = parser.getServers();
+    if (servers.empty()) {
+      std::cerr << "Error: no server block found in config file" << std::endl;
+      return 1;
+    }
 
-	servers.push_back(s);
 
-	return Config(servers);
-}
 
-int main()
-{
-	Config config = newMockConfig();
 
-	Reactor reactor(config);
+	// Config config = newMockConfig();
+	// Config config = newMockConfig();
+	
+	Reactor reactor(servers);
 
 	reactor.run();
 }
