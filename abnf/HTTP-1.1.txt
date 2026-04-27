@@ -1,0 +1,62 @@
+BWS = &lt;BWS, see [HTTP], Section 5.6.3&gt;
+
+HTTP-message = start-line CRLF *( field-line CRLF ) CRLF [
+ message-body ]
+HTTP-name = %x48.54.54.50 ; HTTP
+HTTP-version = HTTP-name "/" DIGIT "." DIGIT
+
+OWS = &lt;OWS, see [HTTP], Section 5.6.3&gt;
+
+RWS = &lt;RWS, see [HTTP], Section 5.6.3&gt;
+
+Transfer-Encoding = [ transfer-coding *( OWS "," OWS transfer-coding
+ ) ]
+
+absolute-URI = &lt;absolute-URI, see [URI], Section 4.3&gt;
+absolute-form = absolute-URI
+absolute-path = &lt;absolute-path, see [HTTP], Section 4.1&gt;
+asterisk-form = "*"
+authority = &lt;authority, see [URI], Section 3.2&gt;
+authority-form = uri-host ":" port
+
+chunk = chunk-size [ chunk-ext ] CRLF chunk-data CRLF
+chunk-data = 1*OCTET
+chunk-ext = *( BWS ";" BWS chunk-ext-name [ BWS "=" BWS chunk-ext-val
+ ] )
+chunk-ext-name = token
+chunk-ext-val = token / quoted-string
+chunk-size = 1*HEXDIG
+chunked-body = *chunk last-chunk trailer-section CRLF
+
+field-line = field-name ":" OWS field-value OWS
+field-name = &lt;field-name, see [HTTP], Section 5.1&gt;
+field-value = &lt;field-value, see [HTTP], Section 5.5&gt;
+
+last-chunk = 1*"0" [ chunk-ext ] CRLF
+
+message-body = *OCTET
+method = token
+
+obs-fold = OWS CRLF RWS
+obs-text = &lt;obs-text, see [HTTP], Section 5.6.4&gt;
+origin-form = absolute-path [ "?" query ]
+
+port = &lt;port, see [URI], Section 3.2.3&gt;
+
+query = &lt;query, see [URI], Section 3.4&gt;
+quoted-string = &lt;quoted-string, see [HTTP], Section 5.6.4&gt;
+
+reason-phrase = 1*( HTAB / SP / VCHAR / obs-text )
+request-line = method SP request-target SP HTTP-version
+request-target = origin-form / absolute-form / authority-form /
+ asterisk-form
+
+start-line = request-line / status-line
+status-code = 3DIGIT
+status-line = HTTP-version SP status-code SP [ reason-phrase ]
+
+token = &lt;token, see [HTTP], Section 5.6.2&gt;
+trailer-section = *( field-line CRLF )
+transfer-coding = &lt;transfer-coding, see [HTTP], Section 10.1.4&gt;
+
+uri-host = &lt;host, see [URI], Section 3.2.2&gt;
