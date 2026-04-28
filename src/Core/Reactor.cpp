@@ -4,8 +4,6 @@
 #include "Core/Client.hpp"
 #include "Core/Server.hpp"
 #include "Http/HttpRequest.hpp"
-#include <asm-generic/socket.h>
-#include <cerrno>
 #include <cstddef>
 #include <cstdio>
 #include <cstring>
@@ -13,7 +11,6 @@
 #include <iostream>
 #include <map>
 #include <netinet/in.h>
-#include <stdexcept>
 #include <string>
 #include <sys/poll.h>
 #include <sys/socket.h>

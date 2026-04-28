@@ -1,4 +1,6 @@
 #include "Http/HttpRequest.hpp"
+#include <cctype>
+#include <cstddef>
 #include <map>
 #include <string>
 
@@ -8,6 +10,16 @@ HttpRequest::HttpRequest()
 
 HttpRequest::~HttpRequest()
 {
+}
+
+static std::string toLower(const std::string &s)
+{
+	std::string lower(s);
+	for (size_t i = 0; i < lower.size(); ++i) {
+		lower[i] = static_cast<char>(
+			std::tolower(static_cast<unsigned char>(lower[i])));
+	}
+	return lower;
 }
 
 // MARK: Getters
@@ -38,10 +50,36 @@ const std::string &HttpRequest::body() const
 
 bool HttpRequest::hasHeader(const std::string &name) const
 {
-	return headers_.count(name) > 0;
+	return headers_.count(toLower(name)) > 0;
 }
 
 const std::string &HttpRequest::header(const std::string &name) const
 {
-	return headers_.find(name)->second;
+	return headers_.find(toLower(name))->second;
+}
+
+// MARK: Setters
+void HttpRequest::method(const std::string &method)
+{
+	method_ = method;
+}
+
+void HttpRequest::uri(const std::string &uri)
+{
+	uri_ = uri;
+}
+
+void HttpRequest::version(const std::string &version)
+{
+	version_ = version;
+}
+
+void HttpRequest::body(const std::string &body)
+{
+	body_ = body;
+}
+
+void HttpRequest::header(const std::string &name, const std::string &value)
+{
+	headers_[toLower(name)] = value;
 }

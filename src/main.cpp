@@ -1,14 +1,6 @@
 #include "Config/Config.hpp"
 #include "Config/ServerConfig.hpp"
 #include "Core/Reactor.hpp"
-#include "Http/Reader.hpp"
-#include <cstddef>
-#include <exception>
-#include <ios>
-#include <iostream>
-#include <netinet/in.h>
-#include <stdexcept>
-#include <string>
 #include <vector>
 
 static Config newMockConfig()

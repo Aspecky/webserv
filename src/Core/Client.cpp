@@ -21,18 +21,16 @@ int Client::socket() const
 
 void Client::onReceive(const char *buf, size_t n)
 {
-	parser_.feed(buf, n);
+	parser_.feed(request_, buf, n);
 
 	if (parser_.isComplete()) {
 		// TODO: Build response
-		const HttpRequest &request = parser_.request();
-		
 	}
 }
 
 const HttpRequest &Client::request() const
 {
-	return parser_.request();
+	return request_;
 }
 
 bool Client::requestComplete() const
