@@ -233,3 +233,53 @@ std::string ConfigParser::trim(const std::string& str, char sep) {
     size_t last = str.find_last_not_of(sep);
     return str.substr(first, (last - first + 1));
 }
+
+
+
+void printServerConfig(const ServerConfig& server)
+{
+    std::cout << "server {\n";
+    std::cout << "    listen " << server.port << ";\n";
+    std::cout << "    host \"" << server.host << "\";\n";
+    std::cout << "    max_body_size " << server.max_body_size << ";\n";
+
+    for (std::map<int, std::string>::const_iterator it = server.error_pages.begin();
+         it != server.error_pages.end(); ++it) {
+        std::cout << "    error_page " << it->first << " " << it->second << ";\n";
+    }
+
+    for (std::map<std::string, LocationConfig>::const_iterator it = server.locations.begin();
+         it != server.locations.end(); ++it) {
+        const LocationConfig& loc = it->second;
+        std::cout << "\n    location " << it->first << " {\n";
+
+        if (!loc.root.empty())
+            std::cout << "        root " << loc.root << ";\n";
+        if (!loc.index.empty())
+            std::cout << "        index " << loc.index << ";\n";
+
+        if (!loc.methods.empty()) {
+            std::cout << "        methods";
+            for (size_t i = 0; i < loc.methods.size(); ++i)
+                std::cout << " " << loc.methods[i];
+            std::cout << ";\n";
+        }
+
+        std::cout << "        directory_listing " << (loc.directory_listing ? "on" : "off") << ";\n";
+
+        if (!loc.upload_store.empty())
+            std::cout << "        upload_store " << loc.upload_store << ";\n";
+
+        for (std::map<std::string, std::string>::const_iterator c = loc.cgi.begin();
+             c != loc.cgi.end(); ++c) {
+            std::cout << "        cgi " << c->first << " " << c->second << ";\n";
+        }
+
+        if (!loc.redirect.empty())
+            std::cout << "        return " << loc.redirect << ";\n";
+
+        std::cout << "    }\n";
+    }
+
+    std::cout << "}\n";
+}

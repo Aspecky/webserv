@@ -1,0 +1,24 @@
+Based on response.md, all three components are called from the Client (per-exchange orchestrator), not directly from the server or directly visible to the client (browser). Here's the breakdown:
+
+Who calls what
+The orchestrator is Client — see response.md:151-167:
+
+Component	Called by	When
+RequestHandler::handle()	Client::onReceive()	After parser reports the request is complete
+RequestHandler::handleError()	Client::onReceive()	When the parser reports an error
+HttpResponseWriter::serialize()	Client::onReceive()	Right after the handler populates the response
+HttpResponse (writers)	RequestHandler	Inside handle() / handleError() to fill status/headers/body
+HttpResponse (readers)	HttpResponseWriter	While serializing into the write buffer
+HttpResponse::clear()	Client::onResponseSent()	Per-exchange reset on keep-alive
+The chain of responsibility
+response.md:184-186 makes the rule explicit:
+
+Client is the orchestrator, but it contains no HTTP rule logic of its own. Every HTTP decision goes through one of parser_, handler_, or HttpResponseWriter.
+
+So the answer to "client or server":
+
+Server-side Client (the per-connection object in your reactor) — drives the calls.
+Reactor never touches these — it only sees responseData()/shouldClose() and does the actual send() (response.md:190-192).
+The browser/HTTP client is not involved at all — it just receives the bytes the writer produced.
+Ownership recap from response.md:24-25: HttpResponse is owned by Client, populated by RequestHandler, read by HttpResponseWriter.
+

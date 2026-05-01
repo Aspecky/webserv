@@ -2,7 +2,6 @@
 
 #include "Http/HttpParser.hpp"
 #include "Http/HttpRequest.hpp"
-#include "Response/HttpResponse.hpp"
 #include <cstddef>
 #include <string>
 class Server;
@@ -32,6 +31,5 @@ class Client {
 	Server		&server_;
 	int			 socket_;
 	HttpParser	 parser_;
-	HttpResponse response_;
 	std::string	 writeBuffer_;
 };
