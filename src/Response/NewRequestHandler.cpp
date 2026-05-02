@@ -139,7 +139,7 @@ void RequestHandler::handle(const HttpRequest &req, HttpResponse &res)
 
     std::cout << "method -----> " << req.method() << std::endl;
     if(req.method() == "GET")
-        handleGet(req, *loc, res, true);
+        handleGet(req, *loc, res,matched, true);
     else if(req.method() == "HEAD")
         handleHead(req, *loc, res);
     else if(req.method() == "POST")
@@ -333,10 +333,10 @@ void RequestHandler::handlePost(const HttpRequest &req, const LocationConfig &lo
 
 
 
-void RequestHandler::handleGet(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res, bool withBody)
+void RequestHandler::handleGet(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res, std::string &matched, bool withBody)
 {
     // std::string relativePath = req.getPath().substr(loc.path.size());
-    std::string relativePath = req.uri();
+    std::string relativePath = req.uri().substr(matched.size());
     std::string fullPath = loc.root + relativePath;
 
 
@@ -405,7 +405,7 @@ void RequestHandler::handleGet(const HttpRequest &req, const LocationConfig &loc
 
 void RequestHandler::handleHead(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res)
 {
-    handleGet(req, loc, res, false);
+    handleGet(req, loc, res,Empty, false);
 }
 
 void RequestHandler::handleDelete(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res)

@@ -29,7 +29,7 @@ class RequestHandler {
         bool  isMethodAllowed(const LocationConfig &loc, const std::string &method) const;
 
         // Method dispatch
-        void handleGet(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res, bool withBody);
+        void handleGet(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res,std::string &matched, bool withBody);
         void handleHead(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res);
         void handlePost(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res);
         void handleDelete(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res);
