@@ -12,6 +12,15 @@ HttpRequest::~HttpRequest()
 {
 }
 
+void HttpRequest::reset()
+{
+	method_.clear();
+	uri_.clear();
+	version_.clear();
+	headers_.clear();
+	body_.clear();
+}
+
 static std::string toLower(const std::string &s)
 {
 	std::string lower(s);

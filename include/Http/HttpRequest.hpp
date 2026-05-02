@@ -8,6 +8,8 @@ class HttpRequest {
 	HttpRequest();
 	~HttpRequest();
 
+	void reset();
+
 	const std::string &method() const;
 	void               method(const std::string &method);
 

@@ -11,6 +11,7 @@ class HttpParser {
 	~HttpParser();
 
 	bool feed(HttpRequest &req, const char *data, size_t n);
+	void reset();
 	bool isComplete() const;
 	bool hasError() const;
 

@@ -34,4 +34,6 @@ class Client {
 	HttpRequest request_;
 	HttpParser	parser_;
 	std::string writeBuffer_;
+
+	bool shouldClose_;
 };

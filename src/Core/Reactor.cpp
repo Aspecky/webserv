@@ -3,15 +3,10 @@
 #include "Config/ServerConfig.hpp"
 #include "Core/Client.hpp"
 #include "Core/Server.hpp"
-#include "Http/HttpRequest.hpp"
-#include <cstddef>
 #include <cstdio>
-#include <cstring>
 #include <exception>
 #include <iostream>
 #include <map>
-#include <netinet/in.h>
-#include <string>
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -27,7 +22,6 @@ Reactor::Reactor(const Config &config)
 			Server			   *server		 = new Server(serverConfig);
 			int					sockFd		 = server->socketFd();
 
-			servers_.push_back(server);
 			socketFdToServer_[sockFd] = server;
 
 			struct pollfd pfd = {};
@@ -47,12 +41,14 @@ Reactor::Reactor(const Config &config)
 
 void Reactor::destroy_()
 {
-	for (size_t i = 0; i < servers_.size(); ++i) {
-		delete servers_[i];
+	for (std::map<int, Server *>::iterator it = socketFdToServer_.begin();
+		 it != socketFdToServer_.end(); ++it) {
+		delete it->second;
 	}
 
-	for (size_t i = 0; i < clients_.size(); ++i) {
-		delete clients_[i];
+	for (std::map<int, Client *>::iterator it = socketFdToClient_.begin();
+		 it != socketFdToClient_.end(); ++it) {
+		delete it->second;
 	}
 }
 
@@ -67,14 +63,6 @@ void Reactor::acceptConnection_(Server &server)
 	int		fd	   = client->socket();
 
 	try {
-		clients_.push_back(client);
-	}
-	catch (...) {
-		delete client;
-		throw;
-	}
-
-	try {
 		socketFdToClient_[fd] = client;
 
 		struct pollfd pfd = {};
@@ -84,7 +72,6 @@ void Reactor::acceptConnection_(Server &server)
 		pollFds_.push_back(pfd);
 	}
 	catch (...) {
-		clients_.pop_back();
 		socketFdToClient_.erase(fd);
 		delete client;
 		throw;
@@ -93,38 +80,75 @@ void Reactor::acceptConnection_(Server &server)
 	std::cout << "New client" << std::endl;
 }
 
-void Reactor::handleClient_(Client &client, size_t &idx)
-{
-	int	 fd = client.socket();
-	char buf[BUFSIZ];
-
-	long nbytes = recv(fd, static_cast<void *>(buf), BUFSIZ, 0);
-
-	if (nbytes <= 0) {
-		if (nbytes == 0) {
-			std::cout << "Client disconnected\n";
-		}
-
-		close(fd);
-		pollFds_[idx] = pollFds_.back();
-		pollFds_.pop_back();
-		--idx;
-
-		return;
-	}
-
-	send(fd, static_cast<void *>(buf), static_cast<size_t>(nbytes), 0);
-}
-
-void Reactor::disconnectClient_(size_t idx)
+void Reactor::disconnectClient_(size_t &idx)
 {
 	struct pollfd pfd = pollFds_[idx];
 
 	pollFds_[idx] = pollFds_.back();
 	pollFds_.pop_back();
+	--idx;
 
-	delete socketFdToClient_[pfd.fd];
+	Client *client = socketFdToClient_[pfd.fd];
 	socketFdToClient_.erase(pfd.fd);
+	delete client;
+
+	std::cout << "Client disconnected\n";
+}
+
+void Reactor::handleRead_(size_t &i)
+{
+	struct pollfd &pfd = pollFds_[i];
+
+	std::map<int, Server *>::iterator it = socketFdToServer_.find(pfd.fd);
+
+	if (it != socketFdToServer_.end()) {
+		try {
+			acceptConnection_(*it->second);
+		}
+		catch (std::exception &e) {
+			std::cout << "Couldn't accept client: " << e.what() << std::endl;
+		}
+		return;
+	}
+
+	Client &client = *socketFdToClient_[pfd.fd];
+
+	char buf[BUFSIZ];
+	long nbytes = recv(pfd.fd, static_cast<void *>(buf), sizeof(buf), 0);
+
+	if (nbytes <= 0) {
+		disconnectClient_(i);
+		return;
+	}
+
+	client.onReceive(static_cast<char *>(buf), static_cast<size_t>(nbytes));
+
+	if (client.hasResponse()) {
+		pfd.events = POLLOUT;
+	}
+}
+
+void Reactor::handleClientWrite_(size_t &i)
+{
+	struct pollfd &pfd	  = pollFds_[i];
+	Client		  &client = *socketFdToClient_[pfd.fd];
+
+	long nbytes =
+		send(pfd.fd, client.responseData(), client.responseSize(), 0);
+
+	if (nbytes <= 0) {
+		disconnectClient_(i);
+		return;
+	}
+
+	client.consumeResponse(static_cast<size_t>(nbytes));
+
+	if (client.shouldClose()) {
+		disconnectClient_(i);
+	}
+	else if (client.responseSize() == 0) {
+		pfd.events = POLLIN;
+	}
 }
 
 void Reactor::run()
@@ -141,89 +165,12 @@ void Reactor::run()
 
 			--pollCount;
 
-			// Check for recv readiness
 			if (pfd.revents & POLLIN) {
-				std::map<int, Server *>::iterator it =
-					socketFdToServer_.find(pfd.fd);
-
-				// If it's a server socket, accept new connection
-				if (it != socketFdToServer_.end()) {
-					try {
-						acceptConnection_(*it->second);
-					}
-					catch (std::exception &e) {
-						std::cout << "Couldn't accept client: " << e.what()
-								  << std::endl;
-					}
-					continue;
-				}
-
-				// Otherwise it's a client socket
-				Client &client = *socketFdToClient_[pfd.fd];
-
-				char buf[BUFSIZ];
-				long nbytes =
-					recv(pfd.fd, static_cast<void *>(buf), sizeof(buf), 0);
-
-				if (nbytes <= 0) {
-					disconnectClient_(i);
-					--i;
-
-					if (nbytes == 0) {
-						std::cout << "Client disconnected" << std::endl;
-					}
-					continue;
-				}
-
-				client.onReceive(buf, static_cast<size_t>(nbytes));
-
-				if (client.requestComplete()) {
-					const HttpRequest &req = client.request();
-
-					std::cout << "--- Request ---\n";
-					std::cout << req.method() << " " << req.uri() << " "
-							  << req.version() << "\n";
-					const std::map<std::string, std::string> &headers =
-						req.headers();
-					for (std::map<std::string, std::string>::const_iterator it =
-							 headers.begin();
-						 it != headers.end(); ++it) {
-						std::cout << it->first << ": " << it->second << "\n";
-					}
-					if (!req.body().empty()) {
-						std::cout << "\n" << req.body() << "\n";
-					}
-					std::cout << "---------------\n";
-
-					// Placeholder response so the browser doesn't hang
-					const char *response = "HTTP/1.1 200 OK\r\n"
-										   "Content-Length: 0\r\n"
-										   "Connection: close\r\n"
-										   "\r\n";
-					send(pfd.fd, response, std::strlen(response), 0);
-					disconnectClient_(i);
-					--i;
-					continue;
-				}
-
-				if (client.hasResponse()) {
-					pfd.events |= POLLOUT;
-				}
+				handleRead_(i);
 			}
 
-			// Check for send readiness
-			if (pfd.revents & POLLOUT) {
-				Client &client = *socketFdToClient_[pfd.fd];
-
-				long nbytes = send(pfd.fd, client.responseData(),
-								   client.responseSize(), 0);
-				if (nbytes <= 0) {
-					disconnectClient_(i);
-					--i;
-					continue;
-				}
-
-				client.consumeResponse(nbytes);
+			if (i < pollFds_.size() && (pollFds_[i].revents & POLLOUT)) {
+				handleClientWrite_(i);
 			}
 		}
 	}

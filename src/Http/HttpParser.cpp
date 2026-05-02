@@ -15,6 +15,14 @@ HttpParser::~HttpParser()
 {
 }
 
+void HttpParser::reset()
+{
+	buf_.clear();
+	r_			= Reader(0, 0);
+	state_		= PARSING_REQUEST_LINE;
+	bodyLength_ = 0;
+}
+
 bool HttpParser::parseCRLF()
 {
 	return r_.consume('\r') && r_.consume('\n');
