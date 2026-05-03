@@ -32,6 +32,7 @@ Diagnostics:
       readability-identifier-naming.TemplateParameterCase: CamelCase
       readability-identifier-naming.NamespaceCase: lower_case
       readability-identifier-naming.PrivateMemberSuffix: _
+      readability-identifier-naming.PrivateMethodSuffix: _
   UnusedIncludes: Strict
   MissingIncludes: Strict
 ---
