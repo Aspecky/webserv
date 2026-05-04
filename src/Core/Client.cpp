@@ -1,9 +1,9 @@
 #include "Core/Client.hpp"
 #include "Core/Server.hpp"
 #include "Http/HttpRequest.hpp"
-#include "Response/NewResponse.hpp"
-#include "Response/NewHttpResponseWriter.hpp"
-#include "Response/NewRequestHandler.hpp"
+#include "Response/Response.hpp"
+#include "Response/HttpResponseWriter.hpp"
+#include "Response/RequestHandler.hpp"
 #include <cstddef>
 #include <unistd.h>
 #include <iostream>

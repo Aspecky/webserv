@@ -1,6 +1,6 @@
 #include <algorithm>
 #include <cctype>
-#include "Response/NewResponse.hpp"
+#include "Response/Response.hpp"
 
 
 namespace {

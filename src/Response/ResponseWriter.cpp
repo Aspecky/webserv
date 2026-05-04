@@ -1,7 +1,7 @@
 
 
-#include "Response/NewResponse.hpp"
-#include "Response/NewHttpResponseWriter.hpp"
+#include "Response/Response.hpp"
+#include "Response/HttpResponseWriter.hpp"
 
 #include <cstddef>
 #include <map>
