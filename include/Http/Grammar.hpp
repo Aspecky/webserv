@@ -1,22 +1,12 @@
-#include "Http/Reader.hpp"
+#pragma once
 
+#include "Http/Reader.hpp"
+#include <cstddef>
 
 // TODO: Consider whether passing `char c` is a safe choice
 
 namespace grammar
 {
-
-struct Rule {
-	Rule()
-	{
-	}
-	virtual ~Rule();
-	virtual bool operator()(Reader &r) const = 0;
-
-  private:
-	Rule(const Rule &other);
-	Rule &operator=(Rule other);
-};
 
 namespace abnf
 {
@@ -72,28 +62,89 @@ inline bool subDelim(char c)
 		   c == ')' || c == '*' || c == '+' || c == ',' || c == ';' || c == '=';
 }
 
-struct PctEncoded : Rule {
-	bool operator()(Reader &r) const;
+// pct-encoded = "%" HEXDIG HEXDIG
+struct PctEncoded {
+	const char *operator()(const char *pos, const char *end) const
+	{
+		Reader r(pos, static_cast<size_t>(end - pos));
+		if (!r.consume('%')) {
+			return 0;
+		}
+		if (!r.consumeOne(hexdig)) {
+			return 0;
+		}
+		if (!r.consumeOne(hexdig)) {
+			return 0;
+		}
+		return r.pos;
+	}
 };
 
-struct Pchar : Rule {
-	bool operator()(Reader &r) const;
+// pchar = unreserved / pct-encoded / sub-delims / ":" / "@"
+struct Pchar {
+	const char *operator()(const char *pos, const char *end) const
+	{
+		Reader r(pos, static_cast<size_t>(end - pos));
+		if (r.consumeOne(unreserved) || r.consumeOne(subDelim) ||
+			r.consume(':') || r.consume('@')) {
+			return r.pos;
+		}
+		return PctEncoded()(pos, end);
+	}
 };
 
-struct Segment : Rule {
-	bool operator()(Reader &r) const;
+// segment = *pchar
+struct Segment {
+	const char *operator()(const char *pos, const char *end) const
+	{
+		Reader r(pos, static_cast<size_t>(end - pos));
+		r.consumeWhileRule(Pchar());
+		return r.pos;
+	}
 };
 
-struct AbsolutePath : Rule {
-	bool operator()(Reader &r) const;
+// absolute-path = 1*("/" segment)
+struct AbsolutePath {
+	const char *operator()(const char *pos, const char *end) const
+	{
+		Reader r(pos, static_cast<size_t>(end - pos));
+		if (!r.consume('/')) {
+			return 0;
+		}
+		r.consumeRule(Segment());
+		while (r.consume('/')) {
+			r.consumeRule(Segment());
+		}
+		return r.pos;
+	}
 };
 
-struct Query : Rule {
-	bool operator()(Reader &r) const;
+// query = *(pchar / "/" / "?")
+struct Query {
+	const char *operator()(const char *pos, const char *end) const
+	{
+		Reader r(pos, static_cast<size_t>(end - pos));
+		while (r.consumeRule(Pchar()) || r.consume('/') || r.consume('?')) {
+		}
+		return r.pos;
+	}
 };
 
-struct OriginForm : Rule {
-	bool operator()(Reader &r) const;
+// origin-form = absolute-path ["?" query]
+struct OriginForm {
+	const char *operator()(const char *pos, const char *end) const
+	{
+		Reader r(pos, static_cast<size_t>(end - pos));
+
+		if (!r.consumeRule(AbsolutePath())) {
+			return 0;
+		}
+		if (r.consume('?')) {
+			r.consumeRule(Query());
+		}
+
+		return r.pos;
+	}
 };
 
 } // namespace uri
@@ -109,16 +160,57 @@ inline bool tchar(char c)
 		   abnf::digit(c) || abnf::alpha(c);
 }
 
-struct Token : Rule {
-	bool operator()(Reader &r) const;
+// token = 1*tchar
+struct Token {
+	const char *operator()(const char *pos, const char *end) const
+	{
+		Reader r(pos, static_cast<size_t>(end - pos));
+
+		if (!r.consumeWhile(tchar)) {
+			return 0;
+		}
+
+		return r.pos;
+	}
 };
 
-struct HttpVersion : Rule {
-	bool operator()(Reader &r) const;
+// HTTP-version = "HTTP" "/" DIGIT "." DIGIT
+struct HttpVersion {
+	const char *operator()(const char *pos, const char *end) const
+	{
+		Reader r(pos, static_cast<size_t>(end - pos));
+
+		if (!r.consumeLiteral("HTTP")) {
+			return 0;
+		}
+		if (!r.consume('/')) {
+			return 0;
+		}
+		if (!r.consumeOne(abnf::digit)) {
+			return 0;
+		}
+		if (!r.consume('.')) {
+			return 0;
+		}
+		if (!r.consumeOne(abnf::digit)) {
+			return 0;
+		}
+
+		return r.pos;
+	}
 };
 
-struct OWS : Rule {
-	bool operator()(Reader &r) const;
+// OWS = *(SP / HTAB)
+struct OWS {
+	const char *operator()(const char *pos, const char *end) const
+	{
+		Reader r(pos, static_cast<size_t>(end - pos));
+
+		while (r.consume(abnf::SP) || r.consume(abnf::HTAB)) {
+		}
+
+		return r.pos;
+	}
 };
 
 // obs-text = %x80-FF
@@ -132,17 +224,40 @@ inline bool fieldVchar(char c)
 	return abnf::vchar(c) || obsText(c);
 }
 
-struct FieldContent : Rule {
-	bool operator()(Reader &r) const;
+// field-content = field-vchar [1*(SP / HTAB / field-vchar) field-vchar]
+struct FieldContent {
+	const char *operator()(const char *pos, const char *end) const
+	{
+		Reader r(pos, static_cast<size_t>(end - pos));
+
+		if (!r.consumeOne(fieldVchar)) {
+			return 0;
+		}
+
+		const char *tail = r.pos;
+
+		while (!r.done() && (fieldVchar(r.peek()) || r.peek() == abnf::SP ||
+							 r.peek() == abnf::HTAB)) {
+			r.consume(r.peek());
+		}
+		if (r.pos - tail >= 2 && fieldVchar(*(r.pos - 1))) {
+			return r.pos;
+		}
+
+		return tail;
+	}
 };
 
-struct FieldValue : Rule {
-	bool operator()(Reader &r) const;
-};
+// field-value = *field-content
+struct FieldValue {
+	const char *operator()(const char *pos, const char *end) const
+	{
+		Reader r(pos, static_cast<size_t>(end - pos));
 
-// message-body = *OCTET
-struct MessageBody : Rule {
-	bool operator()(Reader &r) const;
+		r.consumeWhileRule(FieldContent());
+
+		return r.pos;
+	}
 };
 
 } // namespace http
