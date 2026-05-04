@@ -28,6 +28,78 @@ bool HttpParser::parseCRLF()
 	return r_.consume('\r') && r_.consume('\n');
 }
 
+HttpParser::ParseResult HttpParser::tryParseRequestLine(HttpRequest &req)
+{
+	if (!r_.contains("\r\n")) {
+		return INCOMPLETE;
+	}
+
+	std::string out;
+
+	if (!parseToken(out)) {
+		return PARSE_ERROR;
+	}
+	req.method(out);
+
+	if (!r_.consume(grammar::abnf::SP)) {
+		return PARSE_ERROR;
+	}
+
+	out.clear();
+	if (!parseRequestTarget(out)) {
+		return PARSE_ERROR;
+	}
+	req.uri(out);
+
+	if (!r_.consume(grammar::abnf::SP)) {
+		return PARSE_ERROR;
+	}
+
+	out.clear();
+	if (!parseHttpVersion(out)) {
+		return PARSE_ERROR;
+	}
+	req.version(out);
+
+	if (!parseCRLF()) {
+		return PARSE_ERROR;
+	}
+	return COMPLETE;
+}
+
+HttpParser::ParseResult HttpParser::tryParseHeaders(HttpRequest &req)
+{
+	if (!r_.contains("\r\n\r\n")) {
+		return INCOMPLETE;
+	}
+
+	while (r_.remaining() >= 2 && (r_.pos[0] != '\r' || r_.pos[1] != '\n')) {
+		std::string name, value;
+		if (!parseFieldLine(name, value)) {
+			return PARSE_ERROR;
+		}
+		req.header(name, value);
+	}
+	if (!parseCRLF()) {
+		return PARSE_ERROR;
+	}
+	return COMPLETE;
+}
+
+HttpParser::ParseResult HttpParser::tryParseBody(HttpRequest &req)
+{
+	if (req.hasHeader("content-length")) {
+		bodyLength_ = static_cast<size_t>(
+			std::strtoul(req.header("content-length").c_str(), NULL, 10));
+	}
+	if (r_.remaining() < bodyLength_) {
+		return INCOMPLETE;
+	}
+	req.body(std::string(r_.pos, bodyLength_));
+	r_.pos += bodyLength_;
+	return COMPLETE;
+}
+
 bool HttpParser::feed(HttpRequest &req, const char *data, size_t n)
 {
 	if (state_ == PARSING_DONE || state_ == PARSING_ERROR) {
@@ -37,101 +109,39 @@ bool HttpParser::feed(HttpRequest &req, const char *data, size_t n)
 	buf_.append(data, n);
 	r_ = Reader(buf_.data(), buf_.size());
 
-	bool progress = true;
-	while (progress && state_ != PARSING_DONE && state_ != PARSING_ERROR) {
-		progress = false;
-
+	while (state_ != PARSING_DONE && state_ != PARSING_ERROR) {
+		ParseResult result = INCOMPLETE;
 		if (state_ == PARSING_REQUEST_LINE) {
-			if (!r_.contains("\r\n")) {
-				break;
-			}
-			if (!parseRequestLine(req)) {
-				state_ = PARSING_ERROR;
-				break;
-			}
-			state_	 = PARSING_HEADERS;
-			progress = true;
+			result = tryParseRequestLine(req);
 		}
 		else if (state_ == PARSING_HEADERS) {
-			if (!r_.contains("\r\n\r\n")) {
-				break;
-			}
-			if (!parseHeaders(req)) {
-				state_ = PARSING_ERROR;
-				break;
-			}
-			state_	 = PARSING_BODY;
-			progress = true;
+			result = tryParseHeaders(req);
 		}
 		else if (state_ == PARSING_BODY) {
-			if (req.hasHeader("content-length")) {
-				bodyLength_ = static_cast<size_t>(std::strtoul(
-					req.header("content-length").c_str(), NULL, 10));
-			}
-			if (r_.remaining() < bodyLength_) {
-				break;
-			}
-			parseBody(req);
-			state_	 = PARSING_DONE;
-			progress = true;
+			result = tryParseBody(req);
+		}
+
+		if (result == PARSE_ERROR) {
+			state_ = PARSING_ERROR;
+			break;
+		}
+		if (result == INCOMPLETE) {
+			break;
+		}
+
+		if (state_ == PARSING_REQUEST_LINE) {
+			state_ = PARSING_HEADERS;
+		}
+		else if (state_ == PARSING_HEADERS) {
+			state_ = PARSING_BODY;
+		}
+		else if (state_ == PARSING_BODY) {
+			state_ = PARSING_DONE;
 		}
 	}
 
 	buf_.erase(0, r_.consumed());
 	return state_ != PARSING_ERROR;
-}
-
-// request-line   = method SP request-target SP HTTP-version
-bool HttpParser::parseRequestLine(HttpRequest &req)
-{
-	std::string out;
-
-	if (!parseToken(out)) {
-		return false;
-	}
-	req.method(out);
-	out.clear();
-
-	if (!r_.consume(grammar::abnf::SP)) {
-		return false;
-	}
-
-	if (!parseRequestTarget(out)) {
-		return false;
-	}
-	req.uri(out);
-	out.clear();
-
-	if (!r_.consume(grammar::abnf::SP)) {
-		return false;
-	}
-
-	if (!parseHttpVersion(out)) {
-		return false;
-	}
-	req.version(out);
-	out.clear();
-
-	return parseCRLF();
-}
-
-bool HttpParser::parseHeaders(HttpRequest &req)
-{
-	while (r_.remaining() >= 2 && (r_.pos[0] != '\r' || r_.pos[1] != '\n')) {
-		std::string name, value;
-		if (!parseFieldLine(name, value)) {
-			return false;
-		}
-		req.header(name, value);
-	}
-	return parseCRLF();
-}
-
-// message-body = *OCTET (length determined by Content-Length header)
-void HttpParser::parseBody(HttpRequest &req)
-{
-	req.body(std::string(r_.pos, bodyLength_));
-	r_.pos += bodyLength_;
 }
 
 /*

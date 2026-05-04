@@ -27,15 +27,21 @@ class HttpParser {
 		PARSING_ERROR
 	};
 
+	enum ParseResult {
+		INCOMPLETE,
+		COMPLETE,
+		PARSE_ERROR
+	};
+
 	bool parseCRLF();
 	bool parseToken(std::string &out);
 	bool parseRequestTarget(std::string &out);
 	bool parseHttpVersion(std::string &out);
 	bool parseFieldLine(std::string &name, std::string &value);
 
-	bool parseRequestLine(HttpRequest &req);
-	bool parseHeaders(HttpRequest &req);
-	void parseBody(HttpRequest &req);
+	ParseResult tryParseRequestLine(HttpRequest &req);
+	ParseResult tryParseHeaders(HttpRequest &req);
+	ParseResult tryParseBody(HttpRequest &req);
 
 	Reader		r_;
 	State		state_;

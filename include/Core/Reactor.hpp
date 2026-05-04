@@ -25,9 +25,9 @@ class Reactor {
 
 	std::vector<pollfd> pollFds_;
 
-	std::map<int, Server *> socketFdToServer_;
+	std::map<int, Server *> servers_;
+	std::map<int, Client *> clients_;
 
-	std::map<int, Client *> socketFdToClient_;
 
 	void acceptConnection_(Server &server);
 	void disconnectClient_(size_t &idx);

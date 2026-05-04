@@ -22,7 +22,7 @@ Reactor::Reactor(const Config &config)
 			Server			   *server		 = new Server(serverConfig);
 			int					sockFd		 = server->socketFd();
 
-			socketFdToServer_[sockFd] = server;
+			servers_[sockFd] = server;
 
 			struct pollfd pfd = {};
 			pfd.fd			  = sockFd;
@@ -41,13 +41,13 @@ Reactor::Reactor(const Config &config)
 
 void Reactor::destroy_()
 {
-	for (std::map<int, Server *>::iterator it = socketFdToServer_.begin();
-		 it != socketFdToServer_.end(); ++it) {
+	for (std::map<int, Server *>::iterator it = servers_.begin();
+		 it != servers_.end(); ++it) {
 		delete it->second;
 	}
 
-	for (std::map<int, Client *>::iterator it = socketFdToClient_.begin();
-		 it != socketFdToClient_.end(); ++it) {
+	for (std::map<int, Client *>::iterator it = clients_.begin();
+		 it != clients_.end(); ++it) {
 		delete it->second;
 	}
 }
@@ -63,7 +63,7 @@ void Reactor::acceptConnection_(Server &server)
 	int		fd	   = client->socket();
 
 	try {
-		socketFdToClient_[fd] = client;
+		clients_[fd] = client;
 
 		struct pollfd pfd = {};
 		pfd.fd			  = fd;
@@ -72,7 +72,7 @@ void Reactor::acceptConnection_(Server &server)
 		pollFds_.push_back(pfd);
 	}
 	catch (...) {
-		socketFdToClient_.erase(fd);
+		clients_.erase(fd);
 		delete client;
 		throw;
 	}
@@ -88,8 +88,8 @@ void Reactor::disconnectClient_(size_t &idx)
 	pollFds_.pop_back();
 	--idx;
 
-	Client *client = socketFdToClient_[pfd.fd];
-	socketFdToClient_.erase(pfd.fd);
+	Client *client = clients_[pfd.fd];
+	clients_.erase(pfd.fd);
 	delete client;
 
 	std::cout << "Client disconnected\n";
@@ -99,9 +99,9 @@ void Reactor::handleRead_(size_t &i)
 {
 	struct pollfd &pfd = pollFds_[i];
 
-	std::map<int, Server *>::iterator it = socketFdToServer_.find(pfd.fd);
+	std::map<int, Server *>::iterator it = servers_.find(pfd.fd);
 
-	if (it != socketFdToServer_.end()) {
+	if (it != servers_.end()) {
 		try {
 			acceptConnection_(*it->second);
 		}
@@ -111,7 +111,7 @@ void Reactor::handleRead_(size_t &i)
 		return;
 	}
 
-	Client &client = *socketFdToClient_[pfd.fd];
+	Client &client = *clients_[pfd.fd];
 
 	char buf[BUFSIZ];
 	long nbytes = recv(pfd.fd, static_cast<void *>(buf), sizeof(buf), 0);
@@ -131,7 +131,7 @@ void Reactor::handleRead_(size_t &i)
 void Reactor::handleClientWrite_(size_t &i)
 {
 	struct pollfd &pfd	  = pollFds_[i];
-	Client		  &client = *socketFdToClient_[pfd.fd];
+	Client		  &client = *clients_[pfd.fd];
 
 	long nbytes =
 		send(pfd.fd, client.responseData(), client.responseSize(), 0);
@@ -165,11 +165,13 @@ void Reactor::run()
 
 			--pollCount;
 
+			size_t idx = i;
+
 			if (pfd.revents & POLLIN) {
 				handleRead_(i);
 			}
 
-			if (i < pollFds_.size() && (pollFds_[i].revents & POLLOUT)) {
+			if (idx == i && (pollFds_[i].revents & POLLOUT)) {
 				handleClientWrite_(i);
 			}
 		}
