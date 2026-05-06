@@ -37,6 +37,13 @@ Diagnostics:
   MissingIncludes: Strict
 ---
 If:
+  PathMatch: [.*Grammar.*]
+Diagnostics:
+  ClangTidy:
+    Remove:
+      - readability-magic-numbers
+---
+If:
   PathMatch: [tests/.*]
 Diagnostics:
   ClangTidy:
