@@ -1,5 +1,6 @@
 #pragma once
 #include <cstddef>
+#include <string>
 
 struct Reader {
 	const char *start;
@@ -15,11 +16,11 @@ struct Reader {
 	bool   contains(const char *s) const;
 
 	bool consume(char c);
-	bool consumeLiteral(const char *s);
+	bool consumeLiteral(const char *s, bool caseSensitive = false);
 
 	template <typename Predicate> bool consumeOne(Predicate pred)
 	{
-		if (done() || !pred(static_cast<unsigned char>(*pos))) {
+		if (done() || !pred(*pos)) {
 			return false;
 		}
 		++pos;
@@ -39,11 +40,24 @@ struct Reader {
 		return true;
 	}
 
+	template <typename Rule>
+	bool captureRule(const Rule &rule, std::string &out)
+	{
+		const char *before = pos;
+
+		if (!consumeRule(rule)) {
+			return false;
+		}
+		out.assign(before, pos);
+
+		return true;
+	}
+
 	template <typename Predicate> bool consumeWhile(const Predicate &pred)
 	{
 		const char *start = pos;
 
-		while (!done() && pred(static_cast<unsigned char>(*pos))) {
+		while (!done() && pred(*pos)) {
 			++pos;
 		}
 

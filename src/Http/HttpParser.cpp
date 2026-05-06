@@ -23,11 +23,8 @@ void HttpParser::reset()
 	bodyLength_ = 0;
 }
 
-bool HttpParser::parseCRLF()
-{
-	return r_.consume('\r') && r_.consume('\n');
-}
-
+// request-line = method SP request-target SP HTTP-version
+// request-line CRLF
 HttpParser::ParseResult HttpParser::tryParseRequestLine(HttpRequest &req)
 {
 	if (!r_.contains("\r\n")) {
@@ -36,7 +33,7 @@ HttpParser::ParseResult HttpParser::tryParseRequestLine(HttpRequest &req)
 
 	std::string out;
 
-	if (!parseToken(out)) {
+	if (!r_.captureRule(grammar::http::Method(), out)) {
 		return PARSE_ERROR;
 	}
 	req.method(out);
@@ -45,8 +42,7 @@ HttpParser::ParseResult HttpParser::tryParseRequestLine(HttpRequest &req)
 		return PARSE_ERROR;
 	}
 
-	out.clear();
-	if (!parseRequestTarget(out)) {
+	if (!r_.captureRule(grammar::http11::RequestTarget(), out)) {
 		return PARSE_ERROR;
 	}
 	req.uri(out);
@@ -55,18 +51,20 @@ HttpParser::ParseResult HttpParser::tryParseRequestLine(HttpRequest &req)
 		return PARSE_ERROR;
 	}
 
-	out.clear();
-	if (!parseHttpVersion(out)) {
+	if (!r_.captureRule(grammar::http11::HttpVersion(), out)) {
 		return PARSE_ERROR;
 	}
 	req.version(out);
 
-	if (!parseCRLF()) {
+	if (!r_.consumeRule(grammar::abnf::CRLF())) {
 		return PARSE_ERROR;
 	}
+
 	return COMPLETE;
 }
 
+// field-line = field-name ":" OWS field-value OWS
+// *( field-line CRLF ) CRLF
 HttpParser::ParseResult HttpParser::tryParseHeaders(HttpRequest &req)
 {
 	if (!r_.contains("\r\n\r\n")) {
@@ -75,23 +73,38 @@ HttpParser::ParseResult HttpParser::tryParseHeaders(HttpRequest &req)
 
 	while (r_.remaining() >= 2 && (r_.pos[0] != '\r' || r_.pos[1] != '\n')) {
 		std::string name, value;
-		if (!parseFieldLine(name, value)) {
+		if (!r_.captureRule(grammar::http::FieldName(), name)) {
+			return PARSE_ERROR;
+		}
+		if (!r_.consume(':')) {
+			return PARSE_ERROR;
+		}
+		if (!r_.consumeRule(grammar::http::OWS())) {
+			return PARSE_ERROR;
+		}
+		if (!r_.captureRule(grammar::http::FieldValue(), value)) {
+			return PARSE_ERROR;
+		}
+		if (!r_.consumeRule(grammar::http::OWS())) {
+			return PARSE_ERROR;
+		}
+		if (!r_.consumeRule(grammar::abnf::CRLF())) {
 			return PARSE_ERROR;
 		}
 		req.header(name, value);
 	}
-	if (!parseCRLF()) {
+
+	if (!r_.consumeRule(grammar::abnf::CRLF())) {
 		return PARSE_ERROR;
 	}
+
 	return COMPLETE;
 }
 
+// message-body = *OCTET
+// [ message-body ]
 HttpParser::ParseResult HttpParser::tryParseBody(HttpRequest &req)
 {
-	if (req.hasHeader("content-length")) {
-		bodyLength_ = static_cast<size_t>(
-			std::strtoul(req.header("content-length").c_str(), NULL, 10));
-	}
 	if (r_.remaining() < bodyLength_) {
 		return INCOMPLETE;
 	}
@@ -100,6 +113,7 @@ HttpParser::ParseResult HttpParser::tryParseBody(HttpRequest &req)
 	return COMPLETE;
 }
 
+// HTTP-request = request-line CRLF *( field-line CRLF ) CRLF [ message-body ]
 bool HttpParser::feed(HttpRequest &req, const char *data, size_t n)
 {
 	if (state_ == PARSING_DONE || state_ == PARSING_ERROR) {
@@ -133,7 +147,11 @@ bool HttpParser::feed(HttpRequest &req, const char *data, size_t n)
 			state_ = PARSING_HEADERS;
 		}
 		else if (state_ == PARSING_HEADERS) {
-			state_ = PARSING_BODY;
+			if (req.hasHeader("content-length")) {
+				bodyLength_ = static_cast<size_t>(
+					std::strtoul(req.header("content-length").c_str(), NULL, 10));
+			}
+			state_ = (bodyLength_ == 0) ? PARSING_DONE : PARSING_BODY;
 		}
 		else if (state_ == PARSING_BODY) {
 			state_ = PARSING_DONE;
@@ -144,74 +162,6 @@ bool HttpParser::feed(HttpRequest &req, const char *data, size_t n)
 	return state_ != PARSING_ERROR;
 }
 
-/*
-	field-line = field-name ":" OWS field-value OWS
-	field-name = token
-*/
-bool HttpParser::parseFieldLine(std::string &name, std::string &value)
-{
-	if (!parseToken(name)) {
-		return false;
-	}
-
-	if (!r_.consume(':')) {
-		return false;
-	}
-
-	if (!r_.consumeRule(grammar::http::OWS())) {
-		return false;
-	}
-
-	const char *start = r_.pos;
-	if (!r_.consumeRule(grammar::http::FieldValue())) {
-		return false;
-	}
-	value = std::string(start, static_cast<size_t>(r_.pos - start));
-
-	if (!r_.consumeRule(grammar::http::OWS())) {
-		return false;
-	}
-
-	return parseCRLF();
-}
-
-// token = 1*tchar
-bool HttpParser::parseToken(std::string &out)
-{
-	const char *start = r_.pos;
-	if (!r_.consumeWhileRule(grammar::http::Token())) {
-		return false;
-	}
-	out = std::string(start, static_cast<size_t>(r_.pos - start));
-	return true;
-}
-
-// TODO: Add the other 3 forms
-/*
-	request-target = origin-form
-				   / absolute-form
-				   / authority-form
-				   / asterisk-form
-*/
-bool HttpParser::parseRequestTarget(std::string &out)
-{
-	const char *start = r_.pos;
-	if (!r_.consumeRule(grammar::uri::OriginForm())) {
-		return false;
-	}
-	out = std::string(start, static_cast<size_t>(r_.pos - start));
-	return true;
-}
-
-bool HttpParser::parseHttpVersion(std::string &out)
-{
-	const char *start = r_.pos;
-	if (!r_.consumeRule(grammar::http::HttpVersion())) {
-		return false;
-	}
-	out = std::string(start, static_cast<size_t>(r_.pos - start));
-	return true;
-}
 
 // MARK: Getters
 

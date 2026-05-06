@@ -1,4 +1,5 @@
 #include "Http/Reader.hpp"
+#include <cctype>
 #include <cstddef>
 
 Reader::Reader(const char *data, size_t len)
@@ -36,11 +37,16 @@ bool Reader::consume(char c)
 	return true;
 }
 
-bool Reader::consumeLiteral(const char *s)
+bool Reader::consumeLiteral(const char *s, bool caseSensitive)
 {
 	const char *p = pos;
 	while (*s) {
-		if (p >= end || *p != *s) {
+		if (p >= end) {
+			return false;
+		}
+		if (caseSensitive
+				? (*p != *s)
+				: (tolower((unsigned char)*p) != tolower((unsigned char)*s))) {
 			return false;
 		}
 		++p;
