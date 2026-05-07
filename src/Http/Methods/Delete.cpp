@@ -1,47 +1,46 @@
-#include "Http/RequestHandler.hpp"
 #include "Http/Helper.hpp"
-#include "Http/HttpResponse.hpp"
 #include "Http/HttpRequest.hpp"
+#include "Http/HttpResponse.hpp"
+#include "Http/RequestHandler.hpp"
+#include "Http/StatusCodes.hpp"
 
 #include <cstdio>
 #include <iostream>
 
-
-void RequestHandler::handleDelete(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res, const std::string &matched)
+void RequestHandler::handleDelete(const HttpRequest	   &req,
+								  const LocationConfig &loc, HttpResponse &res,
+								  const std::string &matched)
 {
-    std::string relativePath = RequestHelpers::urlDecode(req.uri().substr(matched.size()));
+	std::string relativePath =
+		RequestHelpers::urlDecode(req.uri().substr(matched.size()));
 
-    std::string fullPath = loc.root;
-    if(!fullPath.empty() && fullPath[fullPath.size() - 1] != '/')
-    {
-        if(relativePath.empty() || relativePath[0] != '/')
-            fullPath += '/';
-    }
-    fullPath += relativePath;
+	std::string fullPath = loc.root;
+	if (!fullPath.empty() && fullPath[fullPath.size() - 1] != '/') {
+		if (relativePath.empty() || relativePath[0] != '/')
+			fullPath += '/';
+	}
+	fullPath += relativePath;
 
-    std::cout << "[ DELETE " << fullPath << " ]" << std::endl;
+	std::cout << "[ DELETE " << fullPath << " ]" << std::endl;
 
-    if(isDirectory(fullPath))
-    {
-        handleError(403, res);
-        return;
-    }
+	if (isDirectory(fullPath)) {
+		handleError(status_codes::FORBIDDEN, res);
+		return;
+	}
 
-    if(!fileExists(fullPath))
-    {
-        handleError(404, res);
-        return;
-    }
+	if (!fileExists(fullPath)) {
+		handleError(status_codes::NOT_FOUND, res);
+		return;
+	}
 
-    if(std::remove(fullPath.c_str()) != 0)
-    {
-        handleError(500, res);
-        return;
-    }
+	if (std::remove(fullPath.c_str()) != 0) {
+		handleError(status_codes::INTERNAL_SERVER_ERROR, res);
+		return;
+	}
 
-    const std::string body = "File deleted.";
-    res.setStatus(200);
-    res.setHeader("Content-Type", "text/plain");
-    res.setHeader("Content-Length", RequestHelpers::sizeToString(body.size()));
-    res.setBody(body);
+	const std::string body = "File deleted.";
+	res.setStatus(status_codes::OK);
+	res.setHeader("Content-Type", "text/plain");
+	res.setHeader("Content-Length", RequestHelpers::sizeToString(body.size()));
+	res.setBody(body);
 }

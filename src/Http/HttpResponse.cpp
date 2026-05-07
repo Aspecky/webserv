@@ -1,4 +1,5 @@
 #include "Http/HttpResponse.hpp"
+#include "Http/StatusCodes.hpp"
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
@@ -65,7 +66,9 @@ std::string toLower(const std::string &s)
 
 } // namespace
 
-HttpResponse::HttpResponse() : statusCode_(200), statusReason_("OK") {};
+HttpResponse::HttpResponse() : statusCode_()
+{
+}
 
 // setters
 void HttpResponse::setStatus(int code)
@@ -132,7 +135,7 @@ bool HttpResponse::hasHeader(const std::string &name) const
 
 void HttpResponse::clear()
 {
-	setStatus(200, "OK");
+	setStatus(status_codes::OK, "OK");
 	body_.clear();
 	headers_.clear();
 }

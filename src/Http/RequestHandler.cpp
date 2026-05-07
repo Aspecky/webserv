@@ -2,9 +2,10 @@
 
 #include "Config/ConfigTypes.hpp"
 
-#include "Http/HttpRequest.hpp"
 #include "Http/Helper.hpp"
+#include "Http/HttpRequest.hpp"
 #include "Http/HttpResponse.hpp"
+#include "Http/StatusCodes.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -56,19 +57,19 @@ void RequestHandler::handle(const HttpRequest &req, HttpResponse &res)
 
 	const LocationConfig *loc = matchLocation(req.uri(), matched);
 	if (!loc) {
-		handleError(404, res);
+		handleError(status_codes::NOT_FOUND, res);
 		return;
 	}
 
 	std::cout << "Matched path is ---->" << matched << std::endl;
 
 	if (!isMethodAllowed(*loc, req.method())) {
-		handleError(405, res);
+		handleError(status_codes::NOT_ALLOWED, res);
 		return;
 	}
 
 	if (!loc->redirect.empty()) {
-		res.setStatus(301);
+		res.setStatus(status_codes::MOVED_PERMANENTLY);
 		res.setHeader("Location", loc->redirect);
 		return;
 	}
@@ -83,7 +84,7 @@ void RequestHandler::handle(const HttpRequest &req, HttpResponse &res)
 	else if (req.method() == "DELETE")
 		handleDelete(req, *loc, res, matched);
 	else {
-		handleError(501, res);
+		handleError(status_codes::NOT_IMPLEMENTED, res);
 	}
 }
 

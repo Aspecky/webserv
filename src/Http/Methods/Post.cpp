@@ -3,6 +3,7 @@
 #include "Http/HttpRequest.hpp"
 #include "Http/HttpResponse.hpp"
 #include "Http/RequestHandler.hpp"
+#include "Http/StatusCodes.hpp"
 #include <ctime>
 #include <fstream>
 #include <iostream>
@@ -18,7 +19,7 @@ void RequestHandler::handlePost(const HttpRequest	 &req,
 		return;
 	}
 
-	handleError(415, res); // Unsupported Media Type
+	handleError(status_codes::UNSUPPORTED_MEDIA_TYPE, res); // Unsupported Media Type
 }
 
 void RequestHandler::handleMultipart(const HttpRequest	  &req,
@@ -29,14 +30,14 @@ void RequestHandler::handleMultipart(const HttpRequest	  &req,
 	const std::string &body		   = req.body();
 
 	if (loc.upload_store.empty()) {
-		handleError(400, res);
+		handleError(status_codes::BAD_REQUEST, res);
 		return;
 	}
 
 	std::string boundary = RequestHelpers::extractBoundary(contentType);
 
 	if (boundary.empty()) {
-		handleError(400, res);
+		handleError(status_codes::BAD_REQUEST, res);
 		return;
 	}
 
@@ -99,7 +100,7 @@ void RequestHandler::handleMultipart(const HttpRequest	  &req,
 
 		std::ofstream out(dest.c_str(), std::ios::binary);
 		if (!out.is_open()) {
-			handleError(500, res);
+			handleError(status_codes::INTERNAL_SERVER_ERROR, res);
 			return;
 		}
 
@@ -110,12 +111,12 @@ void RequestHandler::handleMultipart(const HttpRequest	  &req,
 	}
 
 	if (filesUploaded == 0) {
-		handleError(400, res);
+		handleError(status_codes::BAD_REQUEST, res);
 		return;
 	}
 
 	std::string ok = "Files uploaded successfully.";
-	res.setStatus(201);
+	res.setStatus(status_codes::CREATED);
 	res.setHeader("Content-Type", "text/plain");
 	res.setHeader("Content-Length", RequestHelpers::sizeToString(ok.size()));
 	res.setBody(ok);

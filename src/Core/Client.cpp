@@ -1,8 +1,9 @@
 #include "Core/Client.hpp"
 #include "Core/Server.hpp"
 #include "Http/HttpRequest.hpp"
-#include "Http/RequestHandler.hpp"
 #include "Http/HttpResponse.hpp"
+#include "Http/RequestHandler.hpp"
+#include "Http/StatusCodes.hpp"
 #include <cstddef>
 #include <iostream>
 #include <string>
@@ -25,8 +26,8 @@ int Client::socket() const
 
 void Client::onReceive(const char *buf, size_t n)
 {
-	HttpResponse	   res;
-	RequestHandler	   handler(server_.config());
+	HttpResponse   res;
+	RequestHandler handler(server_.config());
 
 	if (parser_.feed(buf, n, request_)) {
 		if (parser_.isComplete()) {
@@ -38,7 +39,7 @@ void Client::onReceive(const char *buf, size_t n)
 		}
 	}
 	else {
-		handler.handleError(400, res);
+		handler.handleError(status_codes::BAD_REQUEST, res);
 	}
 
 	// parser_.feed(buf, n);
