@@ -5,11 +5,14 @@
 #include "Response/HttpResponseWriter.hpp"
 #include "Response/RequestHandler.hpp"
 #include <cstddef>
+#include <map>
+#include <sstream>
+#include <string>
 #include <unistd.h>
 #include <iostream>
 
 Client::Client(Server &server, int socketFd)
-	: server_(server), socket_(socketFd)
+	: server_(server), socket_(socketFd), shouldClose_(false)
 {
 }
 
@@ -64,6 +67,10 @@ bool Client::hasResponse() const
 void Client::consumeResponse(size_t n)
 {
 	writeBuffer_.erase(0, n);
+	if (writeBuffer_.empty() && !shouldClose_) {
+		parser_.reset();
+		request_.reset();
+	}
 }
 
 const char *Client::responseData() const
@@ -78,5 +85,5 @@ size_t Client::responseSize() const
 
 bool Client::shouldClose() const
 {
-	return false;
+	return shouldClose_;
 }

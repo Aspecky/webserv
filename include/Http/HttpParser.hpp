@@ -10,10 +10,10 @@ class HttpParser {
 	HttpParser();
 	~HttpParser();
 
-	bool               feed(const char *data, size_t n);
-	bool               isComplete() const;
-	bool               hasError() const;
-	const HttpRequest &request() const;
+	bool feed(HttpRequest &req, const char *data, size_t n);
+	void reset();
+	bool isComplete() const;
+	bool hasError() const;
 
   private:
 	HttpParser(const HttpParser &other);
@@ -27,19 +27,18 @@ class HttpParser {
 		PARSING_ERROR
 	};
 
-	bool parseCRLF();
-	bool parseToken(std::string &out);
-	bool parseRequestTarget(std::string &out);
-	bool parseHttpVersion(std::string &out);
-	bool parseFieldLine(std::string &name, std::string &value);
+	enum ParseResult {
+		INCOMPLETE,
+		COMPLETE,
+		PARSE_ERROR
+	};
 
-	bool parseRequestLine();
-	bool parseHeaders();
-	void parseBody();
+	ParseResult tryParseRequestLine(HttpRequest &req);
+	ParseResult tryParseHeaders(HttpRequest &req);
+	ParseResult tryParseBody(HttpRequest &req);
 
-	Reader      r_;
-	State       state_;
+	Reader		r_;
+	State		state_;
 	std::string buf_;
-	size_t      bodyLength_;
-	HttpRequest req_;
+	size_t		bodyLength_;
 };

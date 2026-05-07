@@ -4,6 +4,7 @@
 #include "Http/HttpRequest.hpp"
 #include <cstddef>
 #include <string>
+
 class Server;
 
 class Client {
@@ -14,8 +15,8 @@ class Client {
 	int	 socket() const;
 	void onReceive(const char *buf, size_t n);
 
-	// const HttpRequest &request() const;
-	bool requestComplete() const;
+	const HttpRequest &request() const;
+	bool			   requestComplete() const;
 
 	bool		hasResponse() const;
 	const char *responseData() const;
@@ -28,8 +29,11 @@ class Client {
 	Client(const Client &other);
 	Client &operator=(const Client &other);
 
-	Server		&server_;
-	int			 socket_;
-	HttpParser	 parser_;
-	std::string	 writeBuffer_;
+	Server	   &server_;
+	int			socket_;
+	HttpRequest request_;
+	HttpParser	parser_;
+	std::string writeBuffer_;
+
+	bool shouldClose_;
 };

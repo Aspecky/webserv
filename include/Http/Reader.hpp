@@ -1,5 +1,6 @@
 #pragma once
 #include <cstddef>
+#include <string>
 
 struct Reader {
 	const char *start;
@@ -15,74 +16,63 @@ struct Reader {
 	bool   contains(const char *s) const;
 
 	bool consume(char c);
-	bool consumeLiteral(const char *s);
+	bool consumeLiteral(const char *s, bool caseSensitive = false);
 
-	template <typename Predicate>
-	bool consumeOne(Predicate pred)
+	template <typename Predicate> bool consumeOne(Predicate pred)
 	{
-		if (done() || !pred(static_cast<unsigned char>(*pos))) {
+		if (done() || !pred(*pos)) {
 			return false;
 		}
 		++pos;
+
 		return true;
 	}
 
 	template <typename Rule> bool consumeRule(const Rule &rule)
 	{
-		const char *before = pos;
-		if (!rule(*this)) {
-			pos = before;
+		const char *next = rule(pos, end);
+
+		if (!next) {
 			return false;
 		}
+		pos = next;
+
 		return true;
 	}
 
-	template <typename Predicate>
-	bool consumeWhile(const Predicate &pred)
+	template <typename Rule>
+	bool captureRule(const Rule &rule, std::string &out)
+	{
+		const char *before = pos;
+
+		if (!consumeRule(rule)) {
+			return false;
+		}
+		out.assign(before, pos);
+
+		return true;
+	}
+
+	template <typename Predicate> bool consumeWhile(const Predicate &pred)
 	{
 		const char *start = pos;
-		while (!done() && pred(static_cast<unsigned char>(*pos))) {
+
+		while (!done() && pred(*pos)) {
 			++pos;
 		}
+
 		return pos != start;
 	}
 
-	template <typename Rule>
-	bool consumeWhileRule(const Rule &rule)
+	template <typename Rule> bool consumeWhileRule(const Rule &rule)
 	{
 		const char *start = pos;
-		while (!done()) {
-			const char *before = pos;
-			if (!rule(*this)) {
-				pos = before;
-				break;
-			}
+		const char *next  = 0;
+
+		while ((next = rule(pos, end))) {
+			pos = next;
 		}
+
 		return pos != start;
 	}
-};
-
-struct ReaderGuard {
-	Reader	   &r;
-	const char *saved;
-	bool		committed;
-
-	ReaderGuard(Reader &r) : r(r), saved(r.pos), committed(false)
-	{
-	}
-
-	~ReaderGuard()
-	{
-		if (!committed) {
-			r.pos = saved;
-		}
-	}
-	void commit()
-	{
-		committed = true;
-	}
-
-  private:
-	ReaderGuard(const ReaderGuard &other);
-	ReaderGuard &operator=(ReaderGuard other);
 };
