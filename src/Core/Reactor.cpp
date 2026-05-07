@@ -1,10 +1,7 @@
 #include "Core/Reactor.hpp"
-#include "Config/Config.hpp"
 #include "Config/ConfigTypes.hpp"
 #include "Core/Client.hpp"
 #include "Core/Server.hpp"
-#include "Http/HttpRequest.hpp"
-#include <cerrno>
 #include <cstddef>
 #include <cstdio>
 #include <exception>
