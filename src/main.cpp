@@ -4,6 +4,7 @@
 #include "Core/Reactor.hpp"
 #include "Http/Reader.hpp"
 #include <cstddef>
+#include <cstdlib>
 #include <exception>
 #include <ios>
 #include <iostream>
@@ -11,6 +12,8 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include "Response/Colors.hpp"
+#include "Response/Helper.hpp"
 
 // static Config newMockConfig()
 // {
@@ -28,9 +31,12 @@
 int main(int ac, char **av)
 {
 	signal(SIGPIPE, SIG_IGN);
-	std::string config_path = "default.conf";
-  	if (ac == 2)
-    	config_path = av[1];
+
+  	if (ac < 2){
+		std::cout << RED << "Error: \"miss config file\"" << RESET << std::endl;
+		return (EXIT_FAILURE);
+	}
+    std::string config_path = av[1];
 
 	ConfigParser parser(config_path);
     const std::vector<ServerConfig> &servers = parser.getServers();
@@ -39,11 +45,6 @@ int main(int ac, char **av)
       return 1;
     }
 
-
-
-
-	// Config config = newMockConfig();
-	// Config config = newMockConfig();
 	
 	Reactor reactor(servers);
 

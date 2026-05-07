@@ -1,8 +1,10 @@
 
 #include "Response/Helper.hpp"
-#include "Response/RequestHandler.hpp"
 
+#include <exception>
 #include <sstream>
+#include <iostream>
+
 
 
 
@@ -32,6 +34,18 @@ const MimeRow MimeTable[] = {
 };
 
 
+
+bool needGgi(std::string& path)
+{
+   
+    std::size_t pos = path.rfind('.');
+    if(pos == std::string::npos)
+        return false;
+
+    std::string ext = path.substr(pos);
+    
+    return (ext == ".py" || ext == ".bash");
+}
 
 
 std::string sizeToString(std::size_t n)
