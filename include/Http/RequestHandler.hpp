@@ -22,34 +22,34 @@ class RequestHandler {
 	const ServerConfig &config_;
 
 	// Routing
-	const LocationConfig *matchLocation(const std::string &uri,
+	const LocationConfig *matchLocation_(const std::string &uri,
 										std::string		  &matchPrefix) const;
-	bool				  isMethodAllowed(const LocationConfig &loc,
+	bool				  isMethodAllowed_(const LocationConfig &loc,
 										  const std::string	   &method) const;
 
 	// Method dispatch
-	void handleGet(const HttpRequest &req, const LocationConfig &loc,
+	void handleGet_(const HttpRequest &req, const LocationConfig &loc,
 				   HttpResponse &res, std::string &matched, bool withBody);
-	void handleHead(const HttpRequest &req, const LocationConfig &loc,
+	void handleHead_(const HttpRequest &req, const LocationConfig &loc,
 					HttpResponse &res);
-	void handlePost(const HttpRequest &req, const LocationConfig &loc,
+	void handlePost_(const HttpRequest &req, const LocationConfig &loc,
 					HttpResponse &res);
-	void handleDelete(const HttpRequest &req, const LocationConfig &loc,
+	void handleDelete_(const HttpRequest &req, const LocationConfig &loc,
 					  HttpResponse &res, const std::string &matched);
 
 	// POST multipart/form-data
-	void handleMultipart(const HttpRequest &req, const LocationConfig &loc,
+	void handleMultipart_(const HttpRequest &req, const LocationConfig &loc,
 						 HttpResponse &res);
 
 	// Filesystem helpers
-	std::string buildDirectoryListing(const std::string &path,
+	std::string buildDirectoryListing_(const std::string &path,
 									  const std::string &url) const;
-	std::string mimeTypes(const std::string &path) const;
-	std::string readFile(const std::string &path, bool &ok) const;
-	bool		isDirectory(const std::string &path) const;
-	bool		fileExists(const std::string &path) const;
+	std::string mimeTypes_(const std::string &path) const;
+	std::string readFile_(const std::string &path, bool &ok) const;
+	bool		isDirectory_(const std::string &path) const;
+	bool		fileExists_(const std::string &path) const;
 
-	void writeErrorBody(int status, HttpResponse &res) const;
+	void writeErrorBody_(int status, HttpResponse &res) const;
 };
 
 #endif

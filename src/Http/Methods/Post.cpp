@@ -9,20 +9,20 @@
 #include <iostream>
 #include <string>
 
-void RequestHandler::handlePost(const HttpRequest	 &req,
+void RequestHandler::handlePost_(const HttpRequest	 &req,
 								const LocationConfig &loc, HttpResponse &res)
 {
 	const std::string &contentType = req.header("content-type");
 
 	if (contentType.find("multipart/form-data") != std::string::npos) {
-		handleMultipart(req, loc, res);
+		handleMultipart_(req, loc, res);
 		return;
 	}
 
 	handleError(status_codes::UNSUPPORTED_MEDIA_TYPE, res); // Unsupported Media Type
 }
 
-void RequestHandler::handleMultipart(const HttpRequest	  &req,
+void RequestHandler::handleMultipart_(const HttpRequest	  &req,
 									 const LocationConfig &loc,
 									 HttpResponse		  &res)
 {

@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <iostream>
 
-void RequestHandler::handleDelete(const HttpRequest	   &req,
+void RequestHandler::handleDelete_(const HttpRequest	   &req,
 								  const LocationConfig &loc, HttpResponse &res,
 								  const std::string &matched)
 {
@@ -23,12 +23,12 @@ void RequestHandler::handleDelete(const HttpRequest	   &req,
 
 	std::cout << "[ DELETE " << fullPath << " ]" << std::endl;
 
-	if (isDirectory(fullPath)) {
+	if (isDirectory_(fullPath)) {
 		handleError(status_codes::FORBIDDEN, res);
 		return;
 	}
 
-	if (!fileExists(fullPath)) {
+	if (!fileExists_(fullPath)) {
 		handleError(status_codes::NOT_FOUND, res);
 		return;
 	}

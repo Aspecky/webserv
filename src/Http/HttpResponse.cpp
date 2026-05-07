@@ -1,6 +1,5 @@
 #include "Http/HttpResponse.hpp"
 #include "Http/StatusCodes.hpp"
-#include <algorithm>
 #include <cctype>
 #include <cstddef>
 #include <map>
@@ -49,8 +48,9 @@ std::string defaultReason(int code)
 {
 	const std::size_t n = sizeof(ReasonTable) / sizeof(ReasonTable[0]);
 	for (std::size_t i = 0; i < n; ++i) {
-		if (ReasonTable[i].code == code)
+		if (ReasonTable[i].code == code) {
 			return ReasonTable[i].phrase;
+		}
 	}
 	return "";
 }
@@ -58,9 +58,10 @@ std::string defaultReason(int code)
 std::string toLower(const std::string &s)
 {
 	std::string out(s);
-	for (std::size_t i = 0; i < out.size(); ++i)
+	for (std::size_t i = 0; i < out.size(); ++i) {
 		out[i] =
 			static_cast<char>(std::tolower(static_cast<unsigned char>(out[i])));
+	}
 	return out;
 }
 
@@ -118,8 +119,9 @@ const std::map<std::string, std::string> &HttpResponse::headers() const
 const std::string &HttpResponse::header(const std::string &name) const
 {
 	std::map<std::string, std::string>::const_iterator it = headers_.find(name);
-	if (it == headers_.end())
+	if (it == headers_.end()) {
 		return Empty;
+	}
 	return it->second;
 }
 

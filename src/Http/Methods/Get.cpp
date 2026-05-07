@@ -6,7 +6,7 @@
 
 #include <iostream>
 
-void RequestHandler::handleGet(const HttpRequest	&req,
+void RequestHandler::handleGet_(const HttpRequest	&req,
 							   const LocationConfig &loc, HttpResponse &res,
 							   std::string &matched, bool withBody)
 {
@@ -24,7 +24,7 @@ void RequestHandler::handleGet(const HttpRequest	&req,
 	std::cout << "[ " << fullPath << " ]" << std::endl;
 
 	// Is Directory
-	if (isDirectory(fullPath)) {
+	if (isDirectory_(fullPath)) {
 
 		std::string indexPath = fullPath;
 		if (fullPath.empty() || indexPath[indexPath.size() - 1] != '/')
@@ -32,16 +32,16 @@ void RequestHandler::handleGet(const HttpRequest	&req,
 		indexPath += loc.index.empty() ? "index.html" : loc.index;
 
 		std::cout << "Full path --------> " << indexPath << std::endl;
-		if (fileExists(indexPath)) {
+		if (fileExists_(indexPath)) {
 			bool		ok	 = false;
-			std::string body = readFile(indexPath, ok);
+			std::string body = readFile_(indexPath, ok);
 			if (!ok) {
 				std::cout << "file do not opend\n";
 				handleError(status_codes::INTERNAL_SERVER_ERROR, res);
 				return;
 			}
 			res.setStatus(status_codes::OK);
-			res.setHeader("content-type", mimeTypes(indexPath));
+			res.setHeader("content-type", mimeTypes_(indexPath));
 			res.setHeader("content-length",
 						  RequestHelpers::sizeToString(body.size()));
 			if (withBody)
@@ -51,7 +51,7 @@ void RequestHandler::handleGet(const HttpRequest	&req,
 		if (loc.directory_listing) {
 
 			std::cout << "[ Directory listing ]\n";
-			std::string body = buildDirectoryListing(fullPath, req.uri());
+			std::string body = buildDirectoryListing_(fullPath, req.uri());
 			res.setStatus(status_codes::OK);
 			res.setHeader("content-type", "text/html");
 			res.setHeader("content-length",
@@ -64,7 +64,7 @@ void RequestHandler::handleGet(const HttpRequest	&req,
 		handleError(status_codes::FORBIDDEN, res);
 		return;
 	}
-	if (!fileExists(fullPath)) {
+	if (!fileExists_(fullPath)) {
 		handleError(status_codes::NOT_FOUND, res);
 		return;
 	}
@@ -72,18 +72,18 @@ void RequestHandler::handleGet(const HttpRequest	&req,
 	bool ok = false;
 	std::cout << "full path if is not directory ----------> " << fullPath
 			  << std::endl;
-	std::string body = readFile(fullPath, ok);
+	std::string body = readFile_(fullPath, ok);
 
 	res.setStatus(status_codes::OK);
-	res.setHeader("content-type", mimeTypes(fullPath));
+	res.setHeader("content-type", mimeTypes_(fullPath));
 	res.setHeader("content-length", RequestHelpers::sizeToString(body.size()));
 	if (withBody)
 		res.setBody(body);
 }
 
-void RequestHandler::handleHead(const HttpRequest	 &req,
+void RequestHandler::handleHead_(const HttpRequest	 &req,
 								const LocationConfig &loc, HttpResponse &res)
 {
-	handleGet(req, loc, res, const_cast<std::string &>(RequestHelpers::Empty),
+	handleGet_(req, loc, res, const_cast<std::string &>(RequestHelpers::Empty),
 			  false);
 }

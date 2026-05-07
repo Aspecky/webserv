@@ -59,7 +59,7 @@ const std::string &HttpRequest::body() const
 
 bool HttpRequest::hasHeader(const std::string &name) const
 {
-	return headers_.count(toLower(name)) > 0;
+	return headers_.find(toLower(name)) != headers_.end();
 }
 
 const std::string &HttpRequest::header(const std::string &name) const
