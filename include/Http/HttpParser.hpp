@@ -10,7 +10,7 @@ class HttpParser {
 	HttpParser();
 	~HttpParser();
 
-	bool feed(HttpRequest &req, const char *data, size_t n);
+	bool feed(const char *data, size_t n, HttpRequest &req);
 	void reset();
 	bool isComplete() const;
 	bool hasError() const;
@@ -33,9 +33,9 @@ class HttpParser {
 		PARSE_ERROR
 	};
 
-	ParseResult tryParseRequestLine(HttpRequest &req);
-	ParseResult tryParseHeaders(HttpRequest &req);
-	ParseResult tryParseBody(HttpRequest &req);
+	ParseResult tryParseRequestLine_(HttpRequest &req);
+	ParseResult tryParseHeaders_(HttpRequest &req);
+	ParseResult tryParseBody_(HttpRequest &req);
 
 	Reader		r_;
 	State		state_;

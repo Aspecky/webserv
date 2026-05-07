@@ -26,7 +26,8 @@ class HttpResponse {
         const std::string& header(const std::string& name) const;
         const std::string& body() const;
 
-        
+        void serialize(std::string &out) const;
+
         void clear();
 
     private:

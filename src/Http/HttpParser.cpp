@@ -25,7 +25,7 @@ void HttpParser::reset()
 
 // request-line = method SP request-target SP HTTP-version
 // request-line CRLF
-HttpParser::ParseResult HttpParser::tryParseRequestLine(HttpRequest &req)
+HttpParser::ParseResult HttpParser::tryParseRequestLine_(HttpRequest &req)
 {
 	if (!r_.contains("\r\n")) {
 		return INCOMPLETE;
@@ -65,7 +65,7 @@ HttpParser::ParseResult HttpParser::tryParseRequestLine(HttpRequest &req)
 
 // field-line = field-name ":" OWS field-value OWS
 // *( field-line CRLF ) CRLF
-HttpParser::ParseResult HttpParser::tryParseHeaders(HttpRequest &req)
+HttpParser::ParseResult HttpParser::tryParseHeaders_(HttpRequest &req)
 {
 	if (!r_.contains("\r\n\r\n")) {
 		return INCOMPLETE;
@@ -103,7 +103,7 @@ HttpParser::ParseResult HttpParser::tryParseHeaders(HttpRequest &req)
 
 // message-body = *OCTET
 // [ message-body ]
-HttpParser::ParseResult HttpParser::tryParseBody(HttpRequest &req)
+HttpParser::ParseResult HttpParser::tryParseBody_(HttpRequest &req)
 {
 	if (r_.remaining() < bodyLength_) {
 		return INCOMPLETE;
@@ -114,7 +114,7 @@ HttpParser::ParseResult HttpParser::tryParseBody(HttpRequest &req)
 }
 
 // HTTP-request = request-line CRLF *( field-line CRLF ) CRLF [ message-body ]
-bool HttpParser::feed(HttpRequest &req, const char *data, size_t n)
+bool HttpParser::feed(const char *data, size_t n, HttpRequest &req)
 {
 	if (state_ == PARSING_DONE || state_ == PARSING_ERROR) {
 		return state_ != PARSING_ERROR;
@@ -126,13 +126,13 @@ bool HttpParser::feed(HttpRequest &req, const char *data, size_t n)
 	while (state_ != PARSING_DONE && state_ != PARSING_ERROR) {
 		ParseResult result = INCOMPLETE;
 		if (state_ == PARSING_REQUEST_LINE) {
-			result = tryParseRequestLine(req);
+			result = tryParseRequestLine_(req);
 		}
 		else if (state_ == PARSING_HEADERS) {
-			result = tryParseHeaders(req);
+			result = tryParseHeaders_(req);
 		}
 		else if (state_ == PARSING_BODY) {
-			result = tryParseBody(req);
+			result = tryParseBody_(req);
 		}
 
 		if (result == PARSE_ERROR) {

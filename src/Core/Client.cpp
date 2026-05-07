@@ -1,15 +1,14 @@
 #include "Core/Client.hpp"
 #include "Core/Server.hpp"
 #include "Http/HttpRequest.hpp"
-#include "Response/Response.hpp"
-#include "Response/HttpResponseWriter.hpp"
 #include "Response/RequestHandler.hpp"
+#include "Response/HttpResponse.hpp"
 #include <cstddef>
+#include <iostream>
 #include <map>
 #include <sstream>
 #include <string>
 #include <unistd.h>
-#include <iostream>
 
 Client::Client(Server &server, int socketFd)
 	: server_(server), socket_(socketFd), shouldClose_(false)
@@ -28,16 +27,14 @@ int Client::socket() const
 
 void Client::onReceive(const char *buf, size_t n)
 {
-	HttpResponse res;
-	HttpResponseWriter resWriter;
-	RequestHandler handler(server_.config());
+	HttpResponse	   res;
+	RequestHandler	   handler(server_.config());
 
-	if (parser_.feed(buf, n)) {
+	if (parser_.feed(buf, n, request_)) {
 		if (parser_.isComplete()) {
 			std::cout << "Request parser is complete\n";
-			const HttpRequest &req = parser_.request();
-			handler.handle(req,res);
-			resWriter.serialize(res, writeBuffer_, true);
+			handler.handle(request_, res);
+			res.serialize(writeBuffer_);
 
 			// response_.buildResponse(request, server_.config());
 		}
@@ -45,7 +42,7 @@ void Client::onReceive(const char *buf, size_t n)
 	else {
 		handler.handleError(400, res);
 	}
-	
+
 	// parser_.feed(buf, n);
 }
 
