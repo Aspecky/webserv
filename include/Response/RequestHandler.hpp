@@ -32,7 +32,10 @@ class RequestHandler {
         void handleGet(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res,std::string &matched, bool withBody);
         void handleHead(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res);
         void handlePost(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res);
-        void handleDelete(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res);
+        void handleDelete(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res, const std::string &matched);
+
+        // POST multipart/form-data
+        void handleMultipart(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res);
 
         // Filesystem helpers
         std::string buildDirectoryListing(const std::string &path, const std::string &url) const;

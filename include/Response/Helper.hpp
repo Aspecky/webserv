@@ -19,6 +19,7 @@ namespace RequestHelpers {
     std::string extractBoundary(const std::string &contentType);
     std::string extractFilename(const std::string &disposition);
     std::string getDisposition(const std::string &partHeaders);
+    std::string urlDecode(const std::string &s);
 }
 
 #endif

@@ -15,15 +15,28 @@
 #include <ios>
 #include <sstream>
 #include <sys/stat.h>
-#include <iostream>
 #include <unistd.h>
+#include <iostream>
 // colore
 
 
-
-
-
-
+#define RESET   "\033[0m"
+#define BLACK   "\033[30m"      /* Black */
+#define RED     "\033[31m"      /* Red */
+#define GREEN   "\033[32m"      /* Green */
+#define YELLOW  "\033[33m"      /* Yellow */
+#define BLUE    "\033[34m"      /* Blue */
+#define MAGENTA "\033[35m"      /* Magenta */
+#define CYAN    "\033[36m"      /* Cyan */
+#define WHITE   "\033[37m"      /* White */
+#define BOLDBLACK   "\033[1m\033[30m"      /* Bold Black */
+#define BOLDRED     "\033[1m\033[31m"      /* Bold Red */
+#define BOLDGREEN   "\033[1m\033[32m"      /* Bold Green */
+#define BOLDYELLOW  "\033[1m\033[33m"      /* Bold Yellow */
+#define BOLDBLUE    "\033[1m\033[34m"      /* Bold Blue */
+#define BOLDMAGENTA "\033[1m\033[35m"      /* Bold Magenta */
+#define BOLDCYAN    "\033[1m\033[36m"      /* Bold Cyan */
+#define BOLDWHITE   "\033[1m\033[37m"
 
 
 RequestHandler::RequestHandler(const ServerConfig &config): config_(config) {}
@@ -70,10 +83,9 @@ void RequestHandler::handle(const HttpRequest &req, HttpResponse &res)
     else if(req.method() == "POST")
         handlePost(req, *loc, res);
     else if(req.method() == "DELETE")
-        handleDelete(req, *loc, res);
+        handleDelete(req, *loc, res, matched);
     else
     {
-        std::cout << " ---> Here <----\n";
         handleError(501, res);
     }
 }
@@ -117,10 +129,7 @@ bool  RequestHandler::isMethodAllowed(const LocationConfig &loc, const std::stri
 
 
 
-void RequestHandler::handleHead(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res)
-{
-    handleGet(req, loc, res, const_cast<std::string&>(RequestHelpers::Empty), false);
-}
+
 
 
 

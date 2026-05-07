@@ -1,5 +1,14 @@
 let totalDefs = 2;
 
+const BASE = window.location.origin;
+
+function setLog(id, msg, state) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'log ' + (state || '');
+}
+
   function esc(s) {
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
@@ -142,12 +151,108 @@ Write a 2–3 sentence technical review of the submitted definition. Be precise,
   }
   function clip(s, n) { return s.length > n ? s.slice(0,n) + '…' : s; }
 
-  /* ── basic client-side validation ── */
-  document.getElementById('upload-form').addEventListener('submit', function(e) {
-    const title   = document.getElementById('pf-title').value.trim();
-    const content = document.getElementById('pf-content').value.trim();
-    if (!title || !content) {
-      e.preventDefault();
-      alert('[ ERROR ] Title and Content are required before sending the request.');
+  /* ── upload via fetch (no navigation) ── */
+  document.getElementById('upload-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const fileInput = document.getElementById('pf-file');
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+      alert('[ ERROR ] Please choose a file before uploading.');
+      return;
+    }
+    try {
+      const res = await fetch(form.action, {
+        method: form.method,
+        body: new FormData(form),
+      });
+      const body = await res.text();
+      if (res.ok) {
+        alert('[ OK ] ' + (body || 'Files uploaded successfully'));
+        form.reset();
+        if (typeof clearFile === 'function') clearFile();
+      } else {
+        alert('[ ERROR ' + res.status + ' ] ' + (body || res.statusText));
+      }
+    } catch (err) {
+      alert('[ NETWORK ERROR ] ' + err.message);
     }
   });
+
+
+
+
+  /* -- DELETE — list & remove uploaded files ── */
+const UPLOAD_DIRS = ['/upload'];
+
+async function fetchListing(dir) {
+try {
+    const res = await fetch(BASE + dir + '/');
+    if (!res.ok) return [];
+    const html = await res.text();
+    // Parse directory-listing anchors: <a href="...">name</a>
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const anchors = [...doc.querySelectorAll('a')];
+    return anchors
+    .map(a => a.textContent.trim())
+    .filter(name => name && name !== '.' && name !== '..' && !name.endsWith('/'))
+    .map(name => ({ dir, name }));
+} catch (_) {
+    return [];
+}
+}
+
+const host = document.querySelector('.host-pill');
+if (host) host.textContent = window.location.origin;
+
+
+async function loadFiles() {
+    const list  = document.getElementById('fileList');
+    const count = document.getElementById('fileCount');
+    list.innerHTML = '<div class="file-empty">⏳ Loading…</div>';
+    setLog('log5', '⏳ Fetching directory listings…', 'warn');
+
+    const all = (await Promise.all(UPLOAD_DIRS.map(fetchListing))).flat();
+
+    if (all.length === 0) {
+        list.innerHTML = '<div class="file-empty">No files found.</div>';
+        count.textContent = '0 files';
+        setLog('log5', 'List loaded — empty.', 'ok');
+        return;
+    }
+
+    list.innerHTML = '';
+    for (const f of all) {
+        const row = document.createElement('div');
+        row.className = 'file-row';
+        row.innerHTML =
+        `<span class="file-dir">${f.dir.slice(1)}</span>` +
+        `<span class="file-name">${f.name}</span>`;
+        const btn = document.createElement('button');
+        btn.textContent = '✕ Delete';
+        btn.onclick = () => deleteFile(f.dir, f.name, row);
+        row.appendChild(btn);
+        list.appendChild(row);
+    }
+    count.textContent = `${all.length} file${all.length === 1 ? '' : 's'}`;
+    setLog('log5', `Loaded ${all.length} file(s).`, 'ok');
+}
+
+async function deleteFile(dir, name, row) {
+const url = BASE + dir + '/' + encodeURIComponent(name);
+setLog('log5', `⏳ DELETE ${dir}/${name}…`, 'warn');
+try {
+    const res = await fetch(url, { method: 'DELETE' });
+    let body = '';
+    try { body = await res.text(); } catch(_) {}
+    setLog('log5',
+    `HTTP ${res.status} ${res.statusText}\n` +
+    [...res.headers.entries()].map(([k,v]) => `${k}: ${v}`).join('\n') +
+    (body ? `\n\n${body.slice(0, 300)}` : ''),
+    res.ok ? 'ok' : 'err'
+    );
+    if (res.ok) row.classList.add('gone');
+    setTimeout(() => location.reload(), 3000);
+} catch (e) {
+    setLog('log5', `✖ Network error: ${e.message}`, 'err');
+}
+}

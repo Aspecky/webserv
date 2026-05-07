@@ -84,3 +84,8 @@ void RequestHandler::handleGet(const HttpRequest &req, const LocationConfig &loc
     if(withBody)
         res.setBody(body);
 }
+
+void RequestHandler::handleHead(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res)
+{
+    handleGet(req, loc, res, const_cast<std::string&>(RequestHelpers::Empty), false);
+}

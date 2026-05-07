@@ -75,18 +75,19 @@ std::string extractFilename(const std::string &disposition)
 
 std::string getDisposition(const std::string &partHeaders)
 {
+    const std::string needle = "content-disposition:";
     std::string lower = toLower(partHeaders);
-    std::size_t pos = lower.find("content-didposition:");
+    std::size_t pos = lower.find(needle);
 
     if(pos == std::string::npos)
         return Empty;
 
-    const std::size_t start = pos+ + 20;
+    const std::size_t start = pos + needle.size();
     const std::size_t end = lower.find("\r\n", start);
     std::string value = partHeaders.substr(start,
                         (end == std::string::npos ? partHeaders.size() : end) - start );
 
-    const std::size_t s = value.find_first_not_of("\t");
+    const std::size_t s = value.find_first_not_of(" \t");
     return (s == std::string::npos) ? Empty : value.substr(s);
 }
 
@@ -98,6 +99,39 @@ std::string getContentType(const std::string &ext)
             return MimeTable[i].type;
 
     return "application/octet-stream";
+}
+
+static int hexVal(char c)
+{
+    if(c >= '0' && c <= '9') return c - '0';
+    if(c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if(c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+}
+
+std::string urlDecode(const std::string &s)
+{
+    std::string out;
+    out.reserve(s.size());
+    for(std::size_t i = 0; i < s.size(); ++i)
+    {
+        if(s[i] == '%' && i + 2 < s.size())
+        {
+            int hi = hexVal(s[i + 1]);
+            int lo = hexVal(s[i + 2]);
+            if(hi >= 0 && lo >= 0)
+            {
+                out += static_cast<char>((hi << 4) | lo);
+                i += 2;
+                continue;
+            }
+        }
+        if(s[i] == '+')
+            out += ' ';
+        else
+            out += s[i];
+    }
+    return out;
 }
 
 

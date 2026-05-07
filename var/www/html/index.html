@@ -123,41 +123,6 @@
 
       <div class="post-form">
 
-        <!-- 01 · Title -->
-        <!-- <div class="pf-field">
-          <div class="pf-label">
-            <span class="pf-num">01</span>
-            Title
-            <span class="pf-name-attr">name=<span>"title"</span></span>
-          </div>
-          <input
-            type="text"
-            name="title"
-            id="pf-title"
-            placeholder="Article or topic title…"
-            autocomplete="off"
-            required
-            oninput="livePreview()"
-          >
-        </div>
-
-        <!-- 02 · Content -->
-        <!-- <div class="pf-field">
-          <div class="pf-label">
-            <span class="pf-num">02</span>
-            Content
-            <span class="pf-name-attr">name=<span>"content"</span></span>
-          </div>
-          <textarea
-            name="content"
-            id="pf-content"
-            rows="7"
-            placeholder="Write the full article or topic body here…"
-            required
-            oninput="livePreview()"
-          ></textarea> -->
-        <!-- </div> --> -->
-
         <!-- 03 · File upload -->
         <div class="pf-field">
           <div class="pf-label">
@@ -192,13 +157,34 @@
           </div>
           <button type="submit" class="btn-post">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            POST /upload
+            upload
           </button>
         </div>
 
       </div><!-- /post-form -->
 
     </form>
+
+    <!-- FORM DELETE  -->
+    <div class="card full" id="c5">
+    <div class="card-label">
+      <div class="num">5</div>
+      <h2>Delete Uploaded Files</h2>
+      <span class="method-tag" style="color:#c57af7;border-color:rgba(197,122,247,.2);background:rgba(197,122,247,.1)">DELETE</span>
+    </div>
+    <div class="route"><span style="color:#c57af7">Lists:</span> /upload </div>
+
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button onclick="loadFiles()" style="background:#c57af7">↻ Refresh List</button>
+      <span id="fileCount" style="font-size:12px;color:var(--green-dim)">—</span>
+    </div>
+
+    <div class="file-list" id="fileList">
+      <div class="file-empty">Click ↻ Refresh List to load files.</div>
+    </div>
+
+    <div class="log" id="log5">Awaiting action…</div>
+  </div>
 
     <!-- live debug preview -->
     <div class="debug-strip">

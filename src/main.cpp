@@ -23,9 +23,11 @@
 
 // 	return Config(servers);
 // }
+#include <csignal>
 
 int main(int ac, char **av)
 {
+	signal(SIGPIPE, SIG_IGN);
 	std::string config_path = "default.conf";
   	if (ac == 2)
     	config_path = av[1];
