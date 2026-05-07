@@ -1,7 +1,7 @@
 #include "Config/ConfigParser.hpp"
 #include "Config/ConfigTypes.hpp"
 #include "Core/Reactor.hpp"
-#include "Response/Colors.hpp"
+#include "Http/Colors.hpp"
 #include <csignal>
 #include <cstdlib>
 #include <iostream>

@@ -1,10 +1,10 @@
-#include "Response/RequestHandler.hpp"
+#include "Http/RequestHandler.hpp"
 
 #include "Config/ConfigTypes.hpp"
 
 #include "Http/HttpRequest.hpp"
-#include "Response/Helper.hpp"
-#include "Response/HttpResponse.hpp"
+#include "Http/Helper.hpp"
+#include "Http/HttpResponse.hpp"
 
 #include <algorithm>
 #include <cctype>

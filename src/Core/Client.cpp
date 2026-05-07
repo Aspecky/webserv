@@ -1,8 +1,8 @@
 #include "Core/Client.hpp"
 #include "Core/Server.hpp"
 #include "Http/HttpRequest.hpp"
-#include "Response/RequestHandler.hpp"
-#include "Response/HttpResponse.hpp"
+#include "Http/RequestHandler.hpp"
+#include "Http/HttpResponse.hpp"
 #include <cstddef>
 #include <iostream>
 #include <map>

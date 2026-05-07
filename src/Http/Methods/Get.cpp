@@ -1,6 +1,6 @@
-#include "Response/RequestHandler.hpp"
-#include "Response/Helper.hpp"
-#include "Response/HttpResponse.hpp"
+#include "Http/RequestHandler.hpp"
+#include "Http/Helper.hpp"
+#include "Http/HttpResponse.hpp"
 #include "Http/HttpRequest.hpp"
 
 #include <iostream>
