@@ -1,6 +1,5 @@
 #include "Core/Client.hpp"
 #include "Core/Server.hpp"
-#include "Http/HttpRequest.hpp"
 #include "Http/HttpResponse.hpp"
 #include "Http/RequestHandler.hpp"
 #include "Http/StatusCodes.hpp"
@@ -10,7 +9,7 @@
 #include <unistd.h>
 
 Client::Client(Server &server, int socketFd)
-	: server_(server), socket_(socketFd), shouldClose_(false)
+	: server_(server), socket_(socketFd)
 {
 }
 
@@ -63,10 +62,6 @@ bool Client::hasResponse() const
 void Client::consumeResponse(size_t n)
 {
 	writeBuffer_.erase(0, n);
-	if (writeBuffer_.empty() && !shouldClose_) {
-		parser_.reset();
-		request_.reset();
-	}
 }
 
 const char *Client::responseData() const
@@ -77,9 +72,4 @@ const char *Client::responseData() const
 size_t Client::responseSize() const
 {
 	return writeBuffer_.size();
-}
-
-bool Client::shouldClose() const
-{
-	return shouldClose_;
 }

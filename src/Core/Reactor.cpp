@@ -133,8 +133,7 @@ void Reactor::handleClientWrite_(size_t &i)
 	struct pollfd &pfd	  = pollFds_[i];
 	Client		  &client = *clients_[pfd.fd];
 
-	long nbytes =
-		send(pfd.fd, client.responseData(), client.responseSize(), 0);
+	long nbytes = send(pfd.fd, client.responseData(), client.responseSize(), 0);
 
 	if (nbytes <= 0) {
 		disconnectClient_(i);
@@ -143,11 +142,8 @@ void Reactor::handleClientWrite_(size_t &i)
 
 	client.consumeResponse(static_cast<size_t>(nbytes));
 
-	if (client.shouldClose()) {
+	if (client.responseSize() == 0) {
 		disconnectClient_(i);
-	}
-	else if (client.responseSize() == 0) {
-		pfd.events = POLLIN;
 	}
 }
 
