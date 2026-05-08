@@ -28,43 +28,67 @@ void RequestHandler::handle(const HttpRequest &req, HttpResponse &res)
 {
 	res.clear();
 
-	// printServerConfig(config_);
-	// pause();
-
 	std::string matched;
+	const LocationConfig *loc = processLocation_(req, res, matched);
+	if (!loc)
+		return;
+
+	if (!processMethodValidation_(req, *loc, res))
+		return;
+
+	if (processRedirect_(*loc, res))
+		return;
+
+	dispatchMethod_(req, *loc, res, matched);
+}
+
+const LocationConfig *RequestHandler::processLocation_(const HttpRequest &req, HttpResponse &res, std::string &matchedPrefix)
+{
 	std::cout << "URI -----> " << req.uri() << std::endl;
 
-	const LocationConfig *loc = matchLocation_(req.uri(), matched);
+	const LocationConfig *loc = matchLocation_(req.uri(), matchedPrefix);
 	if (!loc) {
 		handleError(status_codes::NOT_FOUND, res);
-		return;
+		return NULL;
 	}
 
-	std::cout << "Matched path is ---->" << matched << std::endl;
+	std::cout << "Matched path is ---->" << matchedPrefix << std::endl;
+	return loc;
+}
 
-	if (!isMethodAllowed_(*loc, req.method())) {
+bool RequestHandler::processMethodValidation_(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res)
+{
+	if (!isMethodAllowed_(loc, req.method())) {
 		handleError(status_codes::NOT_ALLOWED, res);
-		return;
+		return false;
 	}
+	return true;
+}
 
-	if (!loc->redirect.empty()) {
+bool RequestHandler::processRedirect_(const LocationConfig &loc, HttpResponse &res)
+{
+	if (!loc.redirect.empty()) {
 		res.setStatus(status_codes::MOVED_PERMANENTLY);
-		res.setHeader("Location", loc->redirect);
-		return;
+		res.setHeader("Location", loc.redirect);
+		return true;
 	}
+	return false;
+}
 
+void RequestHandler::dispatchMethod_(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res, std::string &matched)
+{
 	std::cout << "method -----> " << req.method() << std::endl;
 	if (req.method() == "GET") {
-		handleGet_(req, *loc, res, matched, true);
+		handleGet_(req, loc, res, matched, true);
 	}
 	else if (req.method() == "HEAD") {
-		handleHead_(req, *loc, res);
+		handleHead_(req, loc, res);
 	}
 	else if (req.method() == "POST") {
-		handlePost_(req, *loc, res);
+		handlePost_(req, loc, res);
 	}
 	else if (req.method() == "DELETE") {
-		handleDelete_(req, *loc, res, matched);
+		handleDelete_(req, loc, res, matched);
 	}
 	else {
 		handleError(status_codes::NOT_IMPLEMENTED, res);
@@ -72,8 +96,7 @@ void RequestHandler::handle(const HttpRequest &req, HttpResponse &res)
 }
 
 const LocationConfig *
-RequestHandler::matchLocation_(const std::string &uri,
-							  std::string		&matchedPrefix) const
+RequestHandler::matchLocation_(const std::string &uri, std::string		&matchedPrefix) const
 {
 	const LocationConfig *loc = NULL;
 	matchedPrefix.clear();

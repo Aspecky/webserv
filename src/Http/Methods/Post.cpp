@@ -9,6 +9,44 @@
 #include <iostream>
 #include <string>
 
+std::string RequestHandler::extractMultipartFilename_(const std::string &partHeader) const
+{
+	std::string filename = RequestHelpers::extractFilename(
+		RequestHelpers::getDisposition(partHeader));
+
+	if (filename.empty()) {
+		return "";
+	}
+
+	std::size_t slash = filename.rfind('/');
+	if (slash != std::string::npos) {
+		filename = filename.substr(slash + 1);
+	}
+	std::size_t back = filename.rfind('\\');
+	if (back != std::string::npos) {
+		filename = filename.substr(back + 1);
+	}
+	if (filename.empty()) {
+		filename = "upload_" + RequestHelpers::sizeToString(
+								   static_cast<std::size_t>(time(NULL)));
+	}
+	return RequestHelpers::urlDecode(filename);
+}
+
+bool RequestHandler::saveUploadedFile_(const std::string &uploadStore, const std::string &filename, const std::string &content) const
+{
+	std::string dest = uploadStore + "/" + filename;
+
+	std::ofstream out(dest.c_str(), std::ios::binary);
+	if (!out.is_open()) {
+		return false;
+	}
+
+	out.write(content.c_str(), static_cast<std::streamsize>(content.size()));
+	out.close();
+	return true;
+}
+
 void RequestHandler::handlePost_(const HttpRequest	 &req,
 								const LocationConfig &loc, HttpResponse &res)
 {
@@ -46,67 +84,38 @@ void RequestHandler::handleMultipart_(const HttpRequest	  &req,
 	std::size_t pos			  = 0;
 
 	while (true) {
-		// this order from rfc 2046
 		std::size_t bdPos = body.find(dlm, pos);
-		if (bdPos == std::string::npos) {
+		if (bdPos == std::string::npos)
 			break;
-		}
+		
 		pos = bdPos + dlm.size();
-
-		if (body.compare(pos, 2, "--") == 0) {
+		if (body.compare(pos, 2, "--") == 0)
 			break;
-		}
 
-		if (body.compare(pos, 2, "\r\n") == 0) {
-			pos += 2;
-		}
+		if (body.compare(pos, 2, "\r\n") == 0) pos += 2;
 
 		std::size_t endHeader = body.find("\r\n\r\n", pos);
-		if (endHeader == std::string::npos) {
+		if (endHeader == std::string::npos)
 			break;
-		}
 
 		std::string partHeader = body.substr(pos, endHeader - pos);
-		pos					   = endHeader + 4;
+		pos	= endHeader + 4;
 
 		std::size_t endBody = body.find("\r\n" + dlm, pos);
-		if (endBody == std::string::npos) {
+		if (endBody == std::string::npos) 
 			break;
-		}
 
 		std::string partBody = body.substr(pos, endBody - pos);
 		pos					 = endBody + 2;
 
-		std::string filename = RequestHelpers::extractFilename(
-			RequestHelpers::getDisposition(partHeader));
-		if (filename.empty()) {
+		std::string filename = extractMultipartFilename_(partHeader);
+		if (filename.empty())
 			continue;
-		}
 
-		std::size_t slash = filename.rfind('/');
-		if (slash != std::string::npos) {
-			filename = filename.substr(slash + 1);
-		}
-		std::size_t back = filename.rfind('\\');
-		if (back != std::string::npos) {
-			filename = filename.substr(back + 1);
-		}
-		if (filename.empty()) {
-			filename = "upload_" + RequestHelpers::sizeToString(
-									   static_cast<std::size_t>(time(NULL)));
-		}
-
-		std::string dest = loc.upload_store + "/" + filename;
-
-		std::ofstream out(dest.c_str(), std::ios::binary);
-		if (!out.is_open()) {
+		if (!saveUploadedFile_(loc.upload_store, filename, partBody)) {
 			handleError(status_codes::INTERNAL_SERVER_ERROR, res);
 			return;
 		}
-
-		out.write(partBody.c_str(),
-				  static_cast<std::streamsize>(partBody.size()));
-		out.close();
 		++filesUploaded;
 	}
 
