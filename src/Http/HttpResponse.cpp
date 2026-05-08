@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <map>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 
 namespace
@@ -118,9 +119,10 @@ const std::map<std::string, std::string> &HttpResponse::headers() const
 
 const std::string &HttpResponse::header(const std::string &name) const
 {
-	std::map<std::string, std::string>::const_iterator it = headers_.find(name);
+	std::map<std::string, std::string>::const_iterator it = headers_.find(toLower(name));
 	if (it == headers_.end()) {
-		return Empty;
+		throw std::out_of_range("HttpResponse::header: header not found: " +
+								name);
 	}
 	return it->second;
 }

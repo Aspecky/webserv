@@ -2,6 +2,7 @@
 #include <cctype>
 #include <cstddef>
 #include <map>
+#include <stdexcept>
 #include <string>
 
 HttpRequest::HttpRequest()
@@ -64,7 +65,15 @@ bool HttpRequest::hasHeader(const std::string &name) const
 
 const std::string &HttpRequest::header(const std::string &name) const
 {
-	return headers_.find(toLower(name))->second;
+	std::map<std::string, std::string>::const_iterator it =
+		headers_.find(toLower(name));
+
+	if (it == headers_.end()) {
+		throw std::out_of_range("HttpRequest::header: header not found: " +
+								name);
+	}
+
+	return it->second;
 }
 
 // MARK: Setters
