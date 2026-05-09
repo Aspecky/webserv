@@ -28,7 +28,7 @@ void RequestHandler::handle(const HttpRequest &req, HttpResponse &res)
 {
 	res.clear();
 
-	std::string matched;
+	std::string			  matched;
 	const LocationConfig *loc = processLocation_(req, res, matched);
 	if (!loc)
 		return;
@@ -42,10 +42,13 @@ void RequestHandler::handle(const HttpRequest &req, HttpResponse &res)
 	dispatchMethod_(req, *loc, res, matched);
 }
 
-const LocationConfig *RequestHandler::processLocation_(const HttpRequest &req, HttpResponse &res, std::string &matchedPrefix)
+const LocationConfig *
+RequestHandler::processLocation_(const HttpRequest &req, HttpResponse &res,
+								 std::string &matchedPrefix)
 {
 	std::cout << "URI -----> " << req.uri() << std::endl;
 
+	// TODO: Use the Rules to split the uri to its path only
 	const LocationConfig *loc = matchLocation_(req.uri(), matchedPrefix);
 	if (!loc) {
 		handleError(status_codes::NOT_FOUND, res);
@@ -56,16 +59,19 @@ const LocationConfig *RequestHandler::processLocation_(const HttpRequest &req, H
 	return loc;
 }
 
-bool RequestHandler::processMethodValidation_(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res)
+bool RequestHandler::processMethodValidation_(const HttpRequest	   &req,
+											  const LocationConfig &loc,
+											  HttpResponse		   &res)
 {
 	if (!isMethodAllowed_(loc, req.method())) {
-		handleError(status_codes::NOT_ALLOWED, res);
+		handleError(status_codes::METHOD_NOT_ALLOWED, res);
 		return false;
 	}
 	return true;
 }
 
-bool RequestHandler::processRedirect_(const LocationConfig &loc, HttpResponse &res)
+bool RequestHandler::processRedirect_(const LocationConfig &loc,
+									  HttpResponse		   &res)
 {
 	if (!loc.redirect.empty()) {
 		res.setStatus(status_codes::MOVED_PERMANENTLY);
@@ -75,7 +81,9 @@ bool RequestHandler::processRedirect_(const LocationConfig &loc, HttpResponse &r
 	return false;
 }
 
-void RequestHandler::dispatchMethod_(const HttpRequest &req, const LocationConfig &loc, HttpResponse &res, std::string &matched)
+void RequestHandler::dispatchMethod_(const HttpRequest	  &req,
+									 const LocationConfig &loc,
+									 HttpResponse &res, std::string &matched)
 {
 	std::cout << "method -----> " << req.method() << std::endl;
 	if (req.method() == "GET") {
@@ -96,7 +104,8 @@ void RequestHandler::dispatchMethod_(const HttpRequest &req, const LocationConfi
 }
 
 const LocationConfig *
-RequestHandler::matchLocation_(const std::string &uri, std::string		&matchedPrefix) const
+RequestHandler::matchLocation_(const std::string &uri,
+							   std::string		 &matchedPrefix) const
 {
 	const LocationConfig *loc = NULL;
 	matchedPrefix.clear();
@@ -116,7 +125,7 @@ RequestHandler::matchLocation_(const std::string &uri, std::string		&matchedPref
 }
 
 bool RequestHandler::isMethodAllowed_(const LocationConfig &loc,
-									 const std::string	  &method) const
+									  const std::string	   &method) const
 {
 	std::vector<std::string> vec = loc.methods;
 	for (std::size_t i = 0; i < vec.size(); ++i) {
@@ -128,7 +137,7 @@ bool RequestHandler::isMethodAllowed_(const LocationConfig &loc,
 }
 
 std::string RequestHandler::buildDirectoryListing_(const std::string &path,
-												  const std::string &url) const
+												   const std::string &url) const
 {
 
 	DIR *dir = opendir(path.c_str());
@@ -141,9 +150,9 @@ std::string RequestHandler::buildDirectoryListing_(const std::string &path,
 	body << "<html><head><title>Index of " << url << "</title></head>"
 		 << "<body><h1>Index of " << url << "</h1><hr><pre>";
 
-	struct dirent *entry;
+	struct dirent *entry = NULL;
 	while ((entry = readdir(dir)) != NULL) {
-		const std::string name = entry->d_name;
+		std::string name = entry->d_name;
 		std::cout << "FILE : " << name << std::endl;
 		body << "<a href=\"" << url;
 		if (url.empty() || url[url.size() - 1] != '/') {
@@ -158,7 +167,7 @@ std::string RequestHandler::buildDirectoryListing_(const std::string &path,
 
 bool RequestHandler::isDirectory_(const std::string &path) const
 {
-	struct stat st;
+	struct stat st = {};
 	if (stat(path.c_str(), &st) != 0) {
 		return false;
 	}
@@ -180,7 +189,7 @@ std::string RequestHandler::readFile_(const std::string &path, bool &ok) const
 
 bool RequestHandler::fileExists_(const std::string &path) const
 {
-	struct stat st;
+	struct stat st = {};
 	if (stat(path.c_str(), &st) != 0) {
 		return false;
 	}
@@ -222,7 +231,7 @@ void RequestHandler::writeErrorBody_(int code, HttpResponse &res) const
 
 std::string RequestHandler::mimeTypes_(const std::string &path) const
 {
-	const std::size_t dot = path.rfind('.');
+	std::size_t dot = path.rfind('.');
 	if (dot == std::string::npos || dot < path.find_last_of('/')) {
 		return "application/octet-stream";
 	}

@@ -75,7 +75,7 @@ void RequestHandler::handleMultipart_(const HttpRequest	  &req,
 	std::string boundary = RequestHelpers::extractBoundary(contentType);
 
 	if (boundary.empty()) {
-		handleError(status_codes::BAD_REQUEST, res);
+		handleError(status_codes::UNPROCESSABLE_CONTENT, res);
 		return;
 	}
 

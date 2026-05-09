@@ -82,6 +82,7 @@ void HttpRequest::method(const std::string &method)
 	method_ = method;
 }
 
+// TODO: Decode the uri before storing it
 void HttpRequest::uri(const std::string &uri)
 {
 	uri_ = uri;

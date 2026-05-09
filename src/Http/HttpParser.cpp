@@ -2,12 +2,14 @@
 #include "Http/Grammar.hpp"
 #include "Http/HttpRequest.hpp"
 #include "Http/Reader.hpp"
+#include "Http/StatusCodes.hpp"
 #include <cstddef>
 #include <cstdlib>
 #include <string>
 
-HttpParser::HttpParser()
-	: r_(0, 0), state_(PARSING_REQUEST_LINE), bodyLength_(0)
+HttpParser::HttpParser(size_t maxBodySize)
+	: MAX_BODY_SIZE(maxBodySize), r_(0, 0), state_(PARSING_REQUEST_LINE),
+	  bodySize_(0), statusCode_(status_codes::BAD_REQUEST)
 {
 }
 
@@ -20,7 +22,23 @@ void HttpParser::reset()
 	buf_.clear();
 	r_			= Reader(0, 0);
 	state_		= PARSING_REQUEST_LINE;
-	bodyLength_ = 0;
+	bodySize_	= 0;
+	statusCode_ = status_codes::BAD_REQUEST;
+}
+
+// HTTP-version   = HTTP-name "/" DIGIT "." DIGIT
+bool HttpParser::validateHttpVersion_(const std::string &str)
+{
+	Reader r(str.data(), str.size());
+
+	r.consumeLiteral("HTTP");
+	r.consume('/');
+
+	std::string strDigit;
+	r.captureRule(grammar::abnf::digit, strDigit);
+
+	return std::strtoul(strDigit.c_str(), NULL, 10) ==
+		   HttpParser::SUPPORTED_HTTP_VERSION;
 }
 
 // request-line = method SP request-target SP HTTP-version
@@ -55,6 +73,11 @@ HttpParser::ParseResult HttpParser::tryParseRequestLine_(HttpRequest &req)
 		return PARSE_ERROR;
 	}
 	req.version(out);
+
+	if (!validateHttpVersion_(req.version())) {
+		statusCode_ = status_codes::HTTP_VERSION_NOT_SUPPORTED;
+		return PARSE_ERROR;
+	}
 
 	if (!r_.consumeRule(grammar::abnf::CRLF())) {
 		return PARSE_ERROR;
@@ -105,11 +128,11 @@ HttpParser::ParseResult HttpParser::tryParseHeaders_(HttpRequest &req)
 // [ message-body ]
 HttpParser::ParseResult HttpParser::tryParseBody_(HttpRequest &req)
 {
-	if (r_.remaining() < bodyLength_) {
+	if (r_.remaining() < bodySize_) {
 		return INCOMPLETE;
 	}
-	req.body(std::string(r_.pos, bodyLength_));
-	r_.pos += bodyLength_;
+	req.body(std::string(r_.pos, bodySize_));
+	r_.pos += bodySize_;
 	return COMPLETE;
 }
 
@@ -148,10 +171,14 @@ bool HttpParser::feed(const char *data, size_t n, HttpRequest &req)
 		}
 		else if (state_ == PARSING_HEADERS) {
 			if (req.hasHeader("content-length")) {
-				bodyLength_ = static_cast<size_t>(
-					std::strtoul(req.header("content-length").c_str(), NULL, 10));
+				bodySize_ = static_cast<size_t>(std::strtoul(
+					req.header("content-length").c_str(), NULL, 10));
+				if (bodySize_ > MAX_BODY_SIZE) {
+					statusCode_ = status_codes::CONTENT_TOO_LARGE;
+					return PARSING_ERROR;
+				}
 			}
-			state_ = (bodyLength_ == 0) ? PARSING_DONE : PARSING_BODY;
+			state_ = (bodySize_ == 0) ? PARSING_DONE : PARSING_BODY;
 		}
 		else if (state_ == PARSING_BODY) {
 			state_ = PARSING_DONE;
@@ -161,7 +188,6 @@ bool HttpParser::feed(const char *data, size_t n, HttpRequest &req)
 	buf_.erase(0, r_.consumed());
 	return state_ != PARSING_ERROR;
 }
-
 
 // MARK: Getters
 
@@ -173,4 +199,9 @@ bool HttpParser::isComplete() const
 bool HttpParser::hasError() const
 {
 	return state_ == PARSING_ERROR;
+}
+
+int HttpParser::statusCode() const
+{
+	return statusCode_;
 }

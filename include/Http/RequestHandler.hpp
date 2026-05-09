@@ -9,7 +9,7 @@ class HttpResponse;
 
 class RequestHandler {
   public:
-	RequestHandler(const ServerConfig &confg);
+	explicit RequestHandler(const ServerConfig &config);
 
 	void handle(const HttpRequest &req, HttpResponse &res);
 

@@ -2,14 +2,14 @@
 #include "Core/Server.hpp"
 #include "Http/HttpResponse.hpp"
 #include "Http/RequestHandler.hpp"
-#include "Http/StatusCodes.hpp"
 #include <cstddef>
 #include <iostream>
 #include <string>
 #include <unistd.h>
 
 Client::Client(Server &server, int socketFd)
-	: server_(server), socket_(socketFd)
+	: server_(server), socket_(socketFd),
+	  parser_(server_.config().max_body_size)
 {
 }
 
@@ -33,15 +33,11 @@ void Client::onReceive(const char *buf, size_t n)
 			std::cout << "Request parser is complete\n";
 			handler.handle(request_, res);
 			res.serialize(writeBuffer_);
-
-			// response_.buildResponse(request, server_.config());
 		}
 	}
 	else {
-		handler.handleError(status_codes::BAD_REQUEST, res);
+		handler.handleError(parser_.statusCode(), res);
 	}
-
-	// parser_.feed(buf, n);
 }
 
 // const HttpRequest &Client::request() const

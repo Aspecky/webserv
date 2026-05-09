@@ -106,5 +106,5 @@ void RequestHandler::handleHead_(const HttpRequest	 &req,
 								const LocationConfig &loc, HttpResponse &res)
 {
 	handleGet_(req, loc, res, const_cast<std::string &>(RequestHelpers::Empty),
-			  false);
+			   false);
 }

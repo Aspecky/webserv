@@ -3,6 +3,7 @@
 #include <map>
 #include <string>
 
+// TODO: Add a query attribute?
 class HttpRequest {
   public:
 	HttpRequest();

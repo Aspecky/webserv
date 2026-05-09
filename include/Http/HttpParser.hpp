@@ -7,13 +7,16 @@
 
 class HttpParser {
   public:
-	HttpParser();
+	HttpParser(size_t maxBodySize);
 	~HttpParser();
 
 	bool feed(const char *data, size_t n, HttpRequest &req);
 	void reset();
 	bool isComplete() const;
 	bool hasError() const;
+	int	 statusCode() const;
+
+	static const int SUPPORTED_HTTP_VERSION = 1;
 
   private:
 	HttpParser(const HttpParser &other);
@@ -37,8 +40,12 @@ class HttpParser {
 	ParseResult tryParseHeaders_(HttpRequest &req);
 	ParseResult tryParseBody_(HttpRequest &req);
 
-	Reader		r_;
-	State		state_;
-	std::string buf_;
-	size_t		bodyLength_;
+	static bool validateHttpVersion_(const std::string &str);
+
+	const size_t MAX_BODY_SIZE;
+	Reader		 r_;
+	State		 state_;
+	std::string	 buf_;
+	size_t		 bodySize_;
+	int			 statusCode_;
 };

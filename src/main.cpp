@@ -13,6 +13,7 @@ int main(int ac, char **av)
 {
 	signal(SIGPIPE, SIG_IGN);
 
+	// TODO: `config` is an optional parameter ./webserv [configuration]
 	if (ac < 2) {
 		std::cout << RED << "Error: \"miss config file\"" << RESET << std::endl;
 		return (EXIT_FAILURE);
