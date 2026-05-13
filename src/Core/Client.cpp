@@ -30,7 +30,6 @@ void Client::onReceive(const char *buf, size_t n)
 
 	if (parser_.feed(buf, n, request_)) {
 		if (parser_.isComplete()) {
-			std::cout << "Request parser is complete\n";
 			handler.handle(request_, res);
 			res.serialize(writeBuffer_);
 		}
@@ -39,11 +38,6 @@ void Client::onReceive(const char *buf, size_t n)
 		handler.handleError(parser_.statusCode(), res);
 	}
 }
-
-// const HttpRequest &Client::request() const
-// {
-// 	return parser_.request();
-// }
 
 bool Client::requestComplete() const
 {

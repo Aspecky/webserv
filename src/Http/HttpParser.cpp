@@ -34,11 +34,7 @@ bool HttpParser::validateHttpVersion_(const std::string &str)
 	r.consumeLiteral("HTTP");
 	r.consume('/');
 
-	std::string strDigit;
-	r.captureRule(grammar::abnf::digit, strDigit);
-
-	return std::strtoul(strDigit.c_str(), NULL, 10) ==
-		   HttpParser::SUPPORTED_HTTP_VERSION;
+	return r.peek() - '0' == HttpParser::SUPPORTED_HTTP_VERSION;
 }
 
 // request-line = method SP request-target SP HTTP-version
@@ -63,7 +59,16 @@ HttpParser::ParseResult HttpParser::tryParseRequestLine_(HttpRequest &req)
 	if (!r_.captureRule(grammar::http11::RequestTarget(), out)) {
 		return PARSE_ERROR;
 	}
-	req.uri(out);
+	{
+		std::string::size_type qpos = out.find('?');
+		if (qpos != std::string::npos) {
+			req.path(out.substr(0, qpos));
+			req.query(out.substr(qpos + 1));
+		} else {
+			req.path(out);
+			req.query("");
+		}
+	}
 
 	if (!r_.consume(grammar::abnf::SP)) {
 		return PARSE_ERROR;

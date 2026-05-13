@@ -54,6 +54,8 @@ class RequestHandler {
 	bool		fileExists_(const std::string &path) const;
 
 	void writeErrorBody_(int status, HttpResponse &res) const;
+
+	static std::string decodeURI_(const std::string &s);
 };
 
 #endif

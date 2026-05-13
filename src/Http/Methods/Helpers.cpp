@@ -108,37 +108,4 @@ std::string getContentType(const std::string &ext)
 	return "application/octet-stream";
 }
 
-static int hexVal(char c)
-{
-	if (c >= '0' && c <= '9')
-		return c - '0';
-	if (c >= 'a' && c <= 'f')
-		return c - 'a' + 10;
-	if (c >= 'A' && c <= 'F')
-		return c - 'A' + 10;
-	return -1;
-}
-
-std::string urlDecode(const std::string &s)
-{
-	std::string out;
-	out.reserve(s.size());
-	for (std::size_t i = 0; i < s.size(); ++i) {
-		if (s[i] == '%' && i + 2 < s.size()) {
-			int hi = hexVal(s[i + 1]);
-			int lo = hexVal(s[i + 2]);
-			if (hi >= 0 && lo >= 0) {
-				out += static_cast<char>((hi << 4) | lo);
-				i += 2;
-				continue;
-			}
-		}
-		if (s[i] == '+')
-			out += ' ';
-		else
-			out += s[i];
-	}
-	return out;
-}
-
 } // namespace RequestHelpers

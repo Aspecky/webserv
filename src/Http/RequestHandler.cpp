@@ -18,6 +18,41 @@
 #include <unistd.h>
 #include <vector>
 
+static int hexVal_(char c)
+{
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	if (c >= 'a' && c <= 'f')
+		return c - 'a' + 10;
+	if (c >= 'A' && c <= 'F')
+		return c - 'A' + 10;
+	return -1;
+}
+
+std::string RequestHandler::decodeURI_(const std::string &s)
+{
+	std::string out;
+	out.reserve(s.size());
+	for (std::size_t i = 0; i < s.size(); ++i) {
+		if (s[i] == '%' && i + 2 < s.size()) {
+			int hi = hexVal_(s[i + 1]);
+			int lo = hexVal_(s[i + 2]);
+			if (hi >= 0 && lo >= 0) {
+				out += static_cast<char>((hi << 4) | lo);
+				i += 2;
+				continue;
+			}
+		}
+		if (s[i] == '+') {
+			out += ' ';
+		}
+		else {
+			out += s[i];
+		}
+	}
+	return out;
+}
+
 RequestHandler::RequestHandler(const ServerConfig &config) : config_(config)
 {
 }
@@ -30,14 +65,17 @@ void RequestHandler::handle(const HttpRequest &req, HttpResponse &res)
 
 	std::string			  matched;
 	const LocationConfig *loc = processLocation_(req, res, matched);
-	if (!loc)
+	if (!loc) {
 		return;
+	}
 
-	if (!processMethodValidation_(req, *loc, res))
+	if (!processMethodValidation_(req, *loc, res)) {
 		return;
+	}
 
-	if (processRedirect_(*loc, res))
+	if (processRedirect_(*loc, res)) {
 		return;
+	}
 
 	dispatchMethod_(req, *loc, res, matched);
 }
@@ -46,10 +84,9 @@ const LocationConfig *
 RequestHandler::processLocation_(const HttpRequest &req, HttpResponse &res,
 								 std::string &matchedPrefix)
 {
-	std::cout << "URI -----> " << req.uri() << std::endl;
+	std::cout << "URI -----> " << req.path() << std::endl;
 
-	// TODO: Use the Rules to split the uri to its path only
-	const LocationConfig *loc = matchLocation_(req.uri(), matchedPrefix);
+	const LocationConfig *loc = matchLocation_(req.path(), matchedPrefix);
 	if (!loc) {
 		handleError(status_codes::NOT_FOUND, res);
 		return NULL;

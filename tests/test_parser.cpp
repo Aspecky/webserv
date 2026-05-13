@@ -1,5 +1,6 @@
 #include "Http/HttpParser.hpp"
 #include "Http/HttpRequest.hpp"
+#include "Http/StatusCodes.hpp"
 #include "lest.hpp"
 #include <string>
 
@@ -10,21 +11,21 @@ lest::tests parserSpec;
 lest_CASE(parserSpec, "parseRequestLine parses GET method")
 {
 	std::string s = "GET / HTTP/1.1\r\n\r\n";
-	HttpParser   p;
+	HttpParser   p(1024 * 1024);
 	HttpRequest  req;
-	p.feed(req, s.data(), s.size());
+	p.feed(s.data(), s.size(), req);
 	lest_EXPECT(!p.hasError());
 	lest_EXPECT(req.method() == "GET");
-	lest_EXPECT(req.uri() == "/");
+	lest_EXPECT(req.path() == "/");
 	lest_EXPECT(req.version() == "HTTP/1.1");
 }
 
 lest_CASE(parserSpec, "parseRequestLine parses POST method")
 {
 	std::string s = "POST /foo HTTP/1.1\r\n\r\n";
-	HttpParser   p;
+	HttpParser   p(1024 * 1024);
 	HttpRequest  req;
-	p.feed(req, s.data(), s.size());
+	p.feed(s.data(), s.size(), req);
 	lest_EXPECT(!p.hasError());
 	lest_EXPECT(req.method() == "POST");
 }
@@ -32,9 +33,9 @@ lest_CASE(parserSpec, "parseRequestLine parses POST method")
 lest_CASE(parserSpec, "parseRequestLine rejects empty method")
 {
 	std::string s = " / HTTP/1.1\r\n\r\n";
-	HttpParser   p;
+	HttpParser   p(1024 * 1024);
 	HttpRequest  req;
-	p.feed(req, s.data(), s.size());
+	p.feed(s.data(), s.size(), req);
 	lest_EXPECT(p.hasError());
 }
 
@@ -43,59 +44,60 @@ lest_CASE(parserSpec, "parseRequestLine rejects empty method")
 lest_CASE(parserSpec, "parseRequestLine parses root path")
 {
 	std::string s = "GET / HTTP/1.1\r\n\r\n";
-	HttpParser   p;
+	HttpParser   p(1024 * 1024);
 	HttpRequest  req;
-	p.feed(req, s.data(), s.size());
+	p.feed(s.data(), s.size(), req);
 	lest_EXPECT(!p.hasError());
-	lest_EXPECT(req.uri() == "/");
+	lest_EXPECT(req.path() == "/");
 }
 
 lest_CASE(parserSpec, "parseRequestLine parses single segment path")
 {
 	std::string s = "GET /foo HTTP/1.1\r\n\r\n";
-	HttpParser   p;
+	HttpParser   p(1024 * 1024);
 	HttpRequest  req;
-	p.feed(req, s.data(), s.size());
+	p.feed(s.data(), s.size(), req);
 	lest_EXPECT(!p.hasError());
-	lest_EXPECT(req.uri() == "/foo");
+	lest_EXPECT(req.path() == "/foo");
 }
 
 lest_CASE(parserSpec, "parseRequestLine parses multi segment path")
 {
 	std::string s = "GET /foo/bar/baz HTTP/1.1\r\n\r\n";
-	HttpParser   p;
+	HttpParser   p(1024 * 1024);
 	HttpRequest  req;
-	p.feed(req, s.data(), s.size());
+	p.feed(s.data(), s.size(), req);
 	lest_EXPECT(!p.hasError());
-	lest_EXPECT(req.uri() == "/foo/bar/baz");
+	lest_EXPECT(req.path() == "/foo/bar/baz");
 }
 
 lest_CASE(parserSpec, "parseRequestLine parses path with query")
 {
 	std::string s = "GET /search?q=hello&lang=en HTTP/1.1\r\n\r\n";
-	HttpParser   p;
+	HttpParser   p(1024 * 1024);
 	HttpRequest  req;
-	p.feed(req, s.data(), s.size());
+	p.feed(s.data(), s.size(), req);
 	lest_EXPECT(!p.hasError());
-	lest_EXPECT(req.uri() == "/search?q=hello&lang=en");
+	lest_EXPECT(req.path() == "/search");
+	lest_EXPECT(req.query() == "q=hello&lang=en");
 }
 
 lest_CASE(parserSpec, "parseRequestLine parses path with pct-encoded")
 {
 	std::string s = "GET /path%20with%20spaces HTTP/1.1\r\n\r\n";
-	HttpParser   p;
+	HttpParser   p(1024 * 1024);
 	HttpRequest  req;
-	p.feed(req, s.data(), s.size());
+	p.feed(s.data(), s.size(), req);
 	lest_EXPECT(!p.hasError());
-	lest_EXPECT(req.uri() == "/path%20with%20spaces");
+	lest_EXPECT(req.path() == "/path%20with%20spaces");
 }
 
 lest_CASE(parserSpec, "parseRequestLine rejects non-slash target")
 {
 	std::string s = "GET foo HTTP/1.1\r\n\r\n";
-	HttpParser   p;
+	HttpParser   p(1024 * 1024);
 	HttpRequest  req;
-	p.feed(req, s.data(), s.size());
+	p.feed(s.data(), s.size(), req);
 	lest_EXPECT(p.hasError());
 }
 
@@ -104,9 +106,9 @@ lest_CASE(parserSpec, "parseRequestLine rejects non-slash target")
 lest_CASE(parserSpec, "parseRequestLine parses HTTP/1.1 version")
 {
 	std::string s = "GET / HTTP/1.1\r\n\r\n";
-	HttpParser   p;
+	HttpParser   p(1024 * 1024);
 	HttpRequest  req;
-	p.feed(req, s.data(), s.size());
+	p.feed(s.data(), s.size(), req);
 	lest_EXPECT(!p.hasError());
 	lest_EXPECT(req.version() == "HTTP/1.1");
 }
@@ -114,9 +116,9 @@ lest_CASE(parserSpec, "parseRequestLine parses HTTP/1.1 version")
 lest_CASE(parserSpec, "parseRequestLine parses HTTP/1.0 version")
 {
 	std::string s = "GET / HTTP/1.0\r\n\r\n";
-	HttpParser   p;
+	HttpParser   p(1024 * 1024);
 	HttpRequest  req;
-	p.feed(req, s.data(), s.size());
+	p.feed(s.data(), s.size(), req);
 	lest_EXPECT(!p.hasError());
 	lest_EXPECT(req.version() == "HTTP/1.0");
 }
@@ -124,18 +126,18 @@ lest_CASE(parserSpec, "parseRequestLine parses HTTP/1.0 version")
 lest_CASE(parserSpec, "parseRequestLine rejects missing version")
 {
 	std::string s = "GET / \r\n\r\n";
-	HttpParser   p;
+	HttpParser   p(1024 * 1024);
 	HttpRequest  req;
-	p.feed(req, s.data(), s.size());
+	p.feed(s.data(), s.size(), req);
 	lest_EXPECT(p.hasError());
 }
 
 lest_CASE(parserSpec, "parseRequestLine rejects malformed version")
 {
 	std::string s = "GET / HTTPS/1.1\r\n\r\n";
-	HttpParser   p;
+	HttpParser   p(1024 * 1024);
 	HttpRequest  req;
-	p.feed(req, s.data(), s.size());
+	p.feed(s.data(), s.size(), req);
 	lest_EXPECT(p.hasError());
 }
 
@@ -144,17 +146,49 @@ lest_CASE(parserSpec, "parseRequestLine rejects malformed version")
 lest_CASE(parserSpec, "parseRequestLine rejects missing SP after method")
 {
 	std::string s = "GET/ HTTP/1.1\r\n\r\n";
-	HttpParser   p;
+	HttpParser   p(1024 * 1024);
 	HttpRequest  req;
-	p.feed(req, s.data(), s.size());
+	p.feed(s.data(), s.size(), req);
 	lest_EXPECT(p.hasError());
 }
 
 lest_CASE(parserSpec, "parseRequestLine rejects missing SP after target")
 {
 	std::string s = "GET /HTTP/1.1\r\n\r\n";
-	HttpParser   p;
+	HttpParser   p(1024 * 1024);
 	HttpRequest  req;
-	p.feed(req, s.data(), s.size());
+	p.feed(s.data(), s.size(), req);
 	lest_EXPECT(p.hasError());
+}
+
+// MARK: parseRequestLine - HTTP version not supported (505)
+
+lest_CASE(parserSpec, "parseRequestLine rejects HTTP/2.0 with 505")
+{
+	std::string s = "GET / HTTP/2.0\r\n\r\n";
+	HttpParser   p(1024 * 1024);
+	HttpRequest  req;
+	p.feed(s.data(), s.size(), req);
+	lest_EXPECT(p.hasError());
+	lest_EXPECT(p.statusCode() == status_codes::HTTP_VERSION_NOT_SUPPORTED);
+}
+
+lest_CASE(parserSpec, "parseRequestLine rejects HTTP/0.9 with 505")
+{
+	std::string s = "GET / HTTP/0.9\r\n\r\n";
+	HttpParser   p(1024 * 1024);
+	HttpRequest  req;
+	p.feed(s.data(), s.size(), req);
+	lest_EXPECT(p.hasError());
+	lest_EXPECT(p.statusCode() == status_codes::HTTP_VERSION_NOT_SUPPORTED);
+}
+
+lest_CASE(parserSpec, "parseRequestLine rejects HTTP/3.0 with 505")
+{
+	std::string s = "GET / HTTP/3.0\r\n\r\n";
+	HttpParser   p(1024 * 1024);
+	HttpRequest  req;
+	p.feed(s.data(), s.size(), req);
+	lest_EXPECT(p.hasError());
+	lest_EXPECT(p.statusCode() == status_codes::HTTP_VERSION_NOT_SUPPORTED);
 }

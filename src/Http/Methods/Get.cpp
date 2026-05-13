@@ -11,7 +11,7 @@ void RequestHandler::handleGet_(const HttpRequest	&req,
 							   const LocationConfig &loc, HttpResponse &res,
 							   const std::string &matched, bool withBody)
 {
-	std::string fullPath = resolvePath_(loc.root, req.uri(), matched);
+	std::string fullPath = resolvePath_(loc.root, req.path(), matched);
 	std::cout << "[ " << fullPath << " ]" << std::endl;
 
 	if (isDirectory_(fullPath)) {
@@ -64,7 +64,7 @@ void RequestHandler::handleDirectoryGet_(const HttpRequest &req, const LocationC
 	}
 	if (loc.directory_listing) {
 		std::cout << "[ Directory listing ]\n";
-		std::string body = buildDirectoryListing_(fullPath, req.uri());
+		std::string body = buildDirectoryListing_(fullPath, req.path());
 		res.setStatus(status_codes::OK);
 		res.setHeader("content-type", "text/html");
 		res.setHeader("content-length",

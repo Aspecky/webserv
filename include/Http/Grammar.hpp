@@ -3,6 +3,106 @@
 #include "Http/Reader.hpp"
 #include <cstddef>
 
+/*
+; --- From Source 3 (HTTP Message Structure) ---
+HTTP-message   = start-line CRLF *( field-line CRLF ) CRLF [ message-body ]
+start-line     = request-line / status-line
+request-line   = method SP request-target SP HTTP-version
+request-target = origin-form / absolute-form / authority-form / asterisk-form
+
+origin-form    = absolute-path [ "?" query ]
+absolute-form  = absolute-URI
+authority-form = uri-host ":" port
+asterisk-form  = "*"
+
+HTTP-name      = %x48.54.54.50 ; "HTTP"
+HTTP-version   = HTTP-name "/" DIGIT "." DIGIT
+
+field-line     = field-name ":" OWS field-value OWS
+trailer-section = *( field-line CRLF )
+message-body   = *OCTET
+
+; --- From Source 2 (HTTP Semantics & Shared Rules) ---
+method         = token
+field-name     = token
+field-value    = *field-content
+field-content  = field-vchar [ 1*( SP / HTAB / field-vchar ) field-vchar ]
+field-vchar    = VCHAR / obs-text
+
+token          = 1*tchar
+tchar          = "!" / "#" / "$" / "%" / "&" / "'" / "*" / "+" / "-" / "." / "^"
+/ "_" / "`" / "|" / "~" / DIGIT / ALPHA
+
+OWS            = *( SP / HTAB )
+BWS            = OWS
+RWS            = 1*( SP / HTAB )
+
+obs-text       = %x80-FF
+absolute-path  = 1*( "/" segment )
+
+; --- From Source 1 (URI Generic Syntax) ---
+absolute-URI   = scheme ":" hier-part [ "?" query ]
+scheme         = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+hier-part      = "//" authority path-abempty
+			   / path-absolute
+			   / path-rootless
+			   / path-empty
+
+authority      = [ userinfo "@" ] host [ ":" port ]
+userinfo       = *( unreserved / pct-encoded / sub-delims / ":" )
+host           = IP-literal / IPv4address / reg-name
+uri-host       = host
+port           = *DIGIT
+
+IP-literal     = "[" ( IPv6address / IPvFuture  ) "]"
+IPvFuture      = "v" 1*HEXDIG "." 1*( unreserved / sub-delims / ":" )
+IPv6address    =                            6( h16 ":" ) ls32
+			   /                       "::" 5( h16 ":" ) ls32
+			   / [               h16 ] "::" 4( h16 ":" ) ls32
+			   / [ *1( h16 ":" ) h16 ] "::" 3( h16 ":" ) ls32
+			   / [ *2( h16 ":" ) h16 ] "::" 2( h16 ":" ) ls32
+			   / [ *3( h16 ":" ) h16 ] "::"    h16 ":"   ls32
+			   / [ *4( h16 ":" ) h16 ] "::"              ls32
+			   / [ *5( h16 ":" ) h16 ] "::"              h16
+			   / [ *6( h16 ":" ) h16 ] "::"
+
+h16            = 1*4HEXDIG
+ls32           = ( h16 ":" h16 ) / IPv4address
+IPv4address    = dec-octet "." dec-octet "." dec-octet "." dec-octet
+dec-octet      = DIGIT                 ; 0-9
+			   / %x31-39 DIGIT         ; 10-99
+			   / "1" 2DIGIT            ; 100-199
+			   / "2" %x30-34 DIGIT     ; 200-249
+			   / "25" %x30-35          ; 250-255
+
+reg-name       = *( unreserved / pct-encoded / sub-delims )
+pct-encoded    = "%" HEXDIG HEXDIG
+unreserved     = ALPHA / DIGIT / "-" / "." / "_" / "~"
+sub-delims     = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "="
+
+path-abempty   = *( "/" segment )
+path-absolute  = "/" [ segment-nz *( "/" segment ) ]
+path-rootless  = segment-nz *( "/" segment )
+path-empty     = 0<pchar>
+segment        = *pchar
+segment-nz     = 1*pchar
+pchar          = unreserved / pct-encoded / sub-delims / ":" / "@"
+
+query          = *( pchar / "/" / "?" )
+
+; --- From Source 4 (Core ABNF Symbols) ---
+ALPHA          = %x41-5A / %x61-7A   ; A-Z / a-z
+DIGIT          = %x30-39             ; 0-9
+HEXDIG         = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
+OCTET          = %x00-FF
+VCHAR          = %x21-7E             ; visible (printing) characters
+SP             = %x20
+HTAB           = %x09
+CR             = %x0D
+LF             = %x0A
+CRLF           = CR LF
+*/
+
 namespace grammar
 {
 
@@ -943,7 +1043,7 @@ struct Scheme {
 		return r.pos;
 	}
 
-	// ALPHA / DIGIT / "+" / "-" / "." 
+	// ALPHA / DIGIT / "+" / "-" / "."
 	static bool schemeChar(unsigned char c)
 	{
 		return abnf::alpha(c) || abnf::digit(c) || c == '+' || c == '-' ||

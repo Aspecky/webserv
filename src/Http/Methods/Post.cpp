@@ -30,7 +30,7 @@ std::string RequestHandler::extractMultipartFilename_(const std::string &partHea
 		filename = "upload_" + RequestHelpers::sizeToString(
 								   static_cast<std::size_t>(time(NULL)));
 	}
-	return RequestHelpers::urlDecode(filename);
+	return decodeURI_(filename);
 }
 
 bool RequestHandler::saveUploadedFile_(const std::string &uploadStore, const std::string &filename, const std::string &content) const

@@ -16,7 +16,8 @@ HttpRequest::~HttpRequest()
 void HttpRequest::reset()
 {
 	method_.clear();
-	uri_.clear();
+	path_.clear();
+	query_.clear();
 	version_.clear();
 	headers_.clear();
 	body_.clear();
@@ -43,9 +44,14 @@ const std::string &HttpRequest::method() const
 	return method_;
 }
 
-const std::string &HttpRequest::uri() const
+const std::string &HttpRequest::path() const
 {
-	return uri_;
+	return path_;
+}
+
+const std::string &HttpRequest::query() const
+{
+	return query_;
 }
 
 const std::string &HttpRequest::version() const
@@ -82,10 +88,14 @@ void HttpRequest::method(const std::string &method)
 	method_ = method;
 }
 
-// TODO: Decode the uri before storing it
-void HttpRequest::uri(const std::string &uri)
+void HttpRequest::path(const std::string &path)
 {
-	uri_ = uri;
+	path_ = path;
+}
+
+void HttpRequest::query(const std::string &query)
+{
+	query_ = query;
 }
 
 void HttpRequest::version(const std::string &version)

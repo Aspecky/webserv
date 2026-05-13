@@ -12,7 +12,7 @@ void RequestHandler::handleDelete_(const HttpRequest	   &req,
 								  const std::string &matched)
 {
 	std::string relativePath =
-		RequestHelpers::urlDecode(req.uri().substr(matched.size()));
+		decodeURI_(req.path().substr(matched.size()));
 
 	std::string fullPath = loc.root;
 	if (!fullPath.empty() && fullPath[fullPath.size() - 1] != '/') {
