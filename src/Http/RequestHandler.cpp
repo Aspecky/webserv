@@ -1,5 +1,6 @@
 #include "Http/RequestHandler.hpp"
 #include "Config/ConfigTypes.hpp"
+#include "Http/Grammar.hpp"
 #include "Http/Helper.hpp"
 #include "Http/HttpRequest.hpp"
 #include "Http/HttpResponse.hpp"
@@ -18,122 +19,48 @@
 #include <unistd.h>
 #include <vector>
 
-static int hexVal_(char c)
-{
-	if (c >= '0' && c <= '9')
-		return c - '0';
-	if (c >= 'a' && c <= 'f')
-		return c - 'a' + 10;
-	if (c >= 'A' && c <= 'F')
-		return c - 'A' + 10;
-	return -1;
-}
-
-std::string RequestHandler::decodeURI_(const std::string &s)
-{
-	std::string out;
-	out.reserve(s.size());
-	for (std::size_t i = 0; i < s.size(); ++i) {
-		if (s[i] == '%' && i + 2 < s.size()) {
-			int hi = hexVal_(s[i + 1]);
-			int lo = hexVal_(s[i + 2]);
-			if (hi >= 0 && lo >= 0) {
-				out += static_cast<char>((hi << 4) | lo);
-				i += 2;
-				continue;
-			}
-		}
-		if (s[i] == '+') {
-			out += ' ';
-		}
-		else {
-			out += s[i];
-		}
-	}
-	return out;
-}
-
 RequestHandler::RequestHandler(const ServerConfig &config) : config_(config)
 {
 }
 
-// void printServerConfig(const ServerConfig& server);
+RequestHandler::~RequestHandler()
+{
+}
 
 void RequestHandler::handle(const HttpRequest &req, HttpResponse &res)
 {
 	res.clear();
 
 	std::string			  matched;
-	const LocationConfig *loc = processLocation_(req, res, matched);
-	if (!loc) {
-		return;
-	}
+	const LocationConfig *loc = matchLocation_(req.path(), matched);
 
-	if (!processMethodValidation_(req, *loc, res)) {
-		return;
-	}
-
-	if (processRedirect_(*loc, res)) {
-		return;
-	}
-
-	dispatchMethod_(req, *loc, res, matched);
-}
-
-const LocationConfig *
-RequestHandler::processLocation_(const HttpRequest &req, HttpResponse &res,
-								 std::string &matchedPrefix)
-{
-	std::cout << "URI -----> " << req.path() << std::endl;
-
-	const LocationConfig *loc = matchLocation_(req.path(), matchedPrefix);
 	if (!loc) {
 		handleError(status_codes::NOT_FOUND, res);
-		return NULL;
+		return;
 	}
 
-	std::cout << "Matched path is ---->" << matchedPrefix << std::endl;
-	return loc;
-}
-
-bool RequestHandler::processMethodValidation_(const HttpRequest	   &req,
-											  const LocationConfig &loc,
-											  HttpResponse		   &res)
-{
-	if (!isMethodAllowed_(loc, req.method())) {
+	if (!isMethodAllowed_(*loc, req.method())) {
 		handleError(status_codes::METHOD_NOT_ALLOWED, res);
-		return false;
+		return;
 	}
-	return true;
-}
 
-bool RequestHandler::processRedirect_(const LocationConfig &loc,
-									  HttpResponse		   &res)
-{
-	if (!loc.redirect.empty()) {
+	if (!loc->redirect.empty()) {
+		res.setHeader("Location", loc->redirect);
 		res.setStatus(status_codes::MOVED_PERMANENTLY);
-		res.setHeader("Location", loc.redirect);
-		return true;
+		return;
 	}
-	return false;
-}
 
-void RequestHandler::dispatchMethod_(const HttpRequest	  &req,
-									 const LocationConfig &loc,
-									 HttpResponse &res, std::string &matched)
-{
-	std::cout << "method -----> " << req.method() << std::endl;
 	if (req.method() == "GET") {
-		handleGet_(req, loc, res, matched, true);
+		handleGet_(req, *loc, res, matched, true);
 	}
 	else if (req.method() == "HEAD") {
-		handleHead_(req, loc, res);
+		handleHead_(req, *loc, res);
 	}
 	else if (req.method() == "POST") {
-		handlePost_(req, loc, res);
+		handlePost_(req, *loc, res);
 	}
 	else if (req.method() == "DELETE") {
-		handleDelete_(req, loc, res, matched);
+		handleDelete_(req, *loc, res, matched);
 	}
 	else {
 		handleError(status_codes::NOT_IMPLEMENTED, res);
@@ -145,7 +72,6 @@ RequestHandler::matchLocation_(const std::string &uri,
 							   std::string		 &matchedPrefix) const
 {
 	const LocationConfig *loc = NULL;
-	matchedPrefix.clear();
 
 	const std::map<std::string, LocationConfig> &locations = config_.locations;
 	for (std::map<std::string, LocationConfig>::const_iterator it =
@@ -240,10 +166,10 @@ void RequestHandler::handleError(int status, HttpResponse &res)
 	writeErrorBody_(status, res);
 }
 
-void RequestHandler::writeErrorBody_(int code, HttpResponse &res) const
+void RequestHandler::writeErrorBody_(int status, HttpResponse &res) const
 {
-	const std::map<int, std::string>::const_iterator it =
-		config_.error_pages.find(code);
+	std::map<int, std::string>::const_iterator it =
+		config_.error_pages.find(status);
 	if (it != config_.error_pages.end()) {
 		bool		ok	 = false;
 		std::string body = readFile_(it->second, ok);
@@ -257,7 +183,7 @@ void RequestHandler::writeErrorBody_(int code, HttpResponse &res) const
 	}
 
 	std::ostringstream html;
-	html << "<html><body><h1>" << code << " " << res.statusReason()
+	html << "<html><body><h1>" << status << " " << res.statusReason()
 		 << "</h1></body></html>";
 
 	const std::string body = html.str();
@@ -281,4 +207,39 @@ std::string RequestHandler::mimeTypes_(const std::string &path) const
 	}
 
 	return RequestHelpers::getContentType(ext);
+}
+
+static int hexVal(char c)
+{
+	if (c >= '0' && c <= '9') {
+		return c - '0';
+	}
+	if (c >= 'a' && c <= 'f') {
+		return c - 'a' + 10;
+	}
+	if (c >= 'A' && c <= 'F') {
+		return c - 'A' + 10;
+	}
+	return -1;
+}
+
+std::string RequestHandler::decodeURI_(const std::string &s)
+{
+	const char *pos = s.data();
+	const char *end = pos + s.size();
+	std::string out;
+
+	out.reserve(s.size());
+
+	while (pos < end) {
+		const char *next = grammar::uri::PctEncoded()(pos, end);
+		if (next) {
+			out += static_cast<char>((hexVal(pos[1]) << 4) | hexVal(pos[2]));
+			pos = next;
+		}
+		else {
+			out += *pos++;
+		}
+	}
+	return out;
 }
