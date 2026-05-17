@@ -1,0 +1,22 @@
+flowchart TD
+    Parser --> Error{Error}
+    Error --> |Yes| C((400/505))
+	Error --> |No| Complete{Complete?}
+	Complete --> |No| Parser
+	Complete --> |Yes| Path{"Valid <br> Path?"}
+
+	Path --> |No| 404((404))
+	Path --> |Yes| Allowed{"Allowed <br> Method?"}
+
+	Allowed --> |No| 405((405))
+	Allowed --> |Yes| Redirect{"Redirect?"}
+
+	Redirect --> |Yes| 301((301))
+	Redirect --> |No| Recognized{"Method <br> Recognized?"}
+
+	Recognized --> |No| 501((501))
+	Recognized --> GET
+	Recognized --> POST
+	Recognized --> DELETE
+
+	
