@@ -90,6 +90,7 @@ RequestHandler::matchLocation_(const std::string &uri,
 bool RequestHandler::isMethodAllowed_(const LocationConfig &loc,
 									  const std::string	   &method) const
 {
+	//TODO: Make `methods` a set instead of a vector
 	std::vector<std::string> vec = loc.methods;
 	for (std::size_t i = 0; i < vec.size(); ++i) {
 		if (vec[i] == method) {

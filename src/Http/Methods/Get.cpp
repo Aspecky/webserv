@@ -3,13 +3,12 @@
 #include "Http/HttpResponse.hpp"
 #include "Http/RequestHandler.hpp"
 #include "Http/StatusCodes.hpp"
-
 #include <iostream>
+#include <string>
 
-
-void RequestHandler::handleGet_(const HttpRequest	&req,
-							   const LocationConfig &loc, HttpResponse &res,
-							   const std::string &matched, bool withBody)
+void RequestHandler::handleGet_(const HttpRequest	 &req,
+								const LocationConfig &loc, HttpResponse &res,
+								const std::string &matched, bool withBody)
 {
 	std::string fullPath = resolvePath_(loc.root, req.path(), matched);
 	std::cout << "[ " << fullPath << " ]" << std::endl;
@@ -22,8 +21,9 @@ void RequestHandler::handleGet_(const HttpRequest	&req,
 	handleFileGet_(loc, res, fullPath, withBody);
 }
 
-
-std::string RequestHandler::resolvePath_(const std::string &root, const std::string &uri, const std::string &matched) const
+std::string RequestHandler::resolvePath_(const std::string &root,
+										 const std::string &uri,
+										 const std::string &matched) const
 {
 	std::string relativePath = uri.substr(matched.size());
 
@@ -37,8 +37,11 @@ std::string RequestHandler::resolvePath_(const std::string &root, const std::str
 	return fullPath;
 }
 
-void RequestHandler::handleDirectoryGet_(const HttpRequest &req, const LocationConfig &loc,
-										 HttpResponse &res, const std::string &fullPath, bool withBody)
+void RequestHandler::handleDirectoryGet_(const HttpRequest	  &req,
+										 const LocationConfig &loc,
+										 HttpResponse		  &res,
+										 const std::string	  &fullPath,
+										 bool				   withBody)
 {
 	std::string indexPath = fullPath;
 	if (fullPath.empty() || indexPath[indexPath.size() - 1] != '/')
@@ -77,7 +80,8 @@ void RequestHandler::handleDirectoryGet_(const HttpRequest &req, const LocationC
 	handleError(status_codes::FORBIDDEN, res);
 }
 
-void RequestHandler::handleFileGet_(const LocationConfig &loc, HttpResponse &res, 
+void RequestHandler::handleFileGet_(const LocationConfig &loc,
+									HttpResponse		 &res,
 									const std::string &fullPath, bool withBody)
 {
 	(void)loc;
@@ -86,12 +90,11 @@ void RequestHandler::handleFileGet_(const LocationConfig &loc, HttpResponse &res
 		return;
 	}
 
-	bool ok = false;
+	bool		ok	 = false;
 	std::string body = readFile_(fullPath, ok);
-	if(!ok)
-	{
+	if (!ok) {
 		handleError(status_codes::INTERNAL_SERVER_ERROR, res);
-		return ;
+		return;
 	}
 	res.setStatus(status_codes::OK);
 	res.setHeader("content-type", mimeTypes_(fullPath));
@@ -100,10 +103,8 @@ void RequestHandler::handleFileGet_(const LocationConfig &loc, HttpResponse &res
 		res.setBody(body);
 }
 
-
-
-void RequestHandler::handleHead_(const HttpRequest	 &req,
-								const LocationConfig &loc, HttpResponse &res)
+void RequestHandler::handleHead_(const HttpRequest	  &req,
+								 const LocationConfig &loc, HttpResponse &res)
 {
 	handleGet_(req, loc, res, const_cast<std::string &>(RequestHelpers::Empty),
 			   false);

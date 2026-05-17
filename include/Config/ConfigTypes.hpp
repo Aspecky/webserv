@@ -25,6 +25,7 @@ struct ServerConfig {
     int          port;
     size_t       max_body_size;
     std::map<int , std::string> error_pages;
+	//TODO: Does not need to be a map, instead, error when two configs are the same
     std::map<std::string, LocationConfig> locations;
     
     ServerConfig() : host("0.0.0.0"), port(8080), max_body_size(100000) {}
